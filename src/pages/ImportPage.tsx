@@ -9,14 +9,17 @@ import { Upload, FileJson, CheckCircle, AlertCircle, Loader2, ArrowRight } from 
 interface ImportPageProps {
   onLoadDemo: () => void;
   onLoadCustom: (data: any) => void;
+  onBack?: () => void;
   isLoading: boolean;
   error: string | null;
 }
 
-export function ImportPage({ onLoadDemo, onLoadCustom, isLoading, error }: ImportPageProps) {
+export function ImportPage({ onLoadDemo, onLoadCustom, onBack, isLoading, error }: ImportPageProps) {
   const [dragActive, setDragActive] = useState(false);
   const [fileName, setFileName] = useState('');
+  const [parsedData, setParsedData] = useState<any>(null);
   const [previewData, setPreviewData] = useState<any>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -37,6 +40,8 @@ export function ImportPage({ onLoadDemo, onLoadCustom, isLoading, error }: Impor
     const file = e.dataTransfer.files[0];
     if (file && file.type === 'application/json') {
       processFile(file);
+    } else if (file) {
+      setLocalError('Please upload a valid JSON file.');
     }
   }, []);
 
@@ -48,15 +53,29 @@ export function ImportPage({ onLoadDemo, onLoadCustom, isLoading, error }: Impor
   }, []);
 
   const processFile = async (file: File) => {
+    setLocalError(null);
+    
     if (file.size > 10 * 1024 * 1024) {
-      alert('File too large. Maximum size is 10MB.');
+      setLocalError('File too large. Maximum size is 10MB.');
       return;
     }
 
     try {
       const text = await file.text();
       const parsed = JSON.parse(text);
+      
+      if (!parsed || typeof parsed !== 'object') {
+        setLocalError('Invalid JSON format. Expected an object.');
+        return;
+      }
+
+      if (!Array.isArray(parsed.activities)) {
+        setLocalError('Invalid data format. Missing "activities" array.');
+        return;
+      }
+
       setFileName(file.name);
+      setParsedData(parsed);
       setPreviewData({
         activities: parsed.activities?.length || 0,
         timelineEvents: parsed.timelineEvents?.length || 0,
@@ -64,15 +83,17 @@ export function ImportPage({ onLoadDemo, onLoadCustom, isLoading, error }: Impor
         skills: parsed.skills?.length || 0,
       });
     } catch (err) {
-      alert('Invalid JSON file. Please check the format.');
+      setLocalError('Failed to parse JSON. Please check the file for syntax errors.');
     }
   };
 
   const handleLoadCustom = () => {
-    if (fileInputRef.current?.files?.[0]) {
-      onLoadCustom(fileInputRef.current.files[0]);
+    if (parsedData) {
+      onLoadCustom(parsedData);
     }
   };
+
+  const displayError = localError || error;
 
   return (
     <div className="min-h-screen bg-signal-bg flex items-center justify-center px-6 py-12">
@@ -128,7 +149,7 @@ export function ImportPage({ onLoadDemo, onLoadCustom, isLoading, error }: Impor
 
             <div
               className={cn(
-                'border-2 border-dashed rounded-xl p-8 transition-all duration-200',
+                'border-2 border-dashed rounded-xl p-8 transition-all duration-200 mt-6',
                 dragActive
                   ? 'border-signal-accent bg-signal-accent/5'
                   : 'border-signal-border hover:border-signal-borderHover'
@@ -155,7 +176,7 @@ export function ImportPage({ onLoadDemo, onLoadCustom, isLoading, error }: Impor
               </label>
             </div>
 
-            {fileName && (
+            {fileName && !localError && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -175,28 +196,31 @@ export function ImportPage({ onLoadDemo, onLoadCustom, isLoading, error }: Impor
                       </p>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => { setFileName(''); setPreviewData(null); fileInputRef.current!.value = ''; }}>
+                  <Button variant="ghost" size="sm" onClick={() => { setFileName(''); setPreviewData(null); setLocalError(null); fileInputRef.current!.value = ''; }}>
                     Remove
                   </Button>
                 </div>
               </motion.div>
             )}
 
-            {error && (
+            {displayError && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-4 p-4 bg-signal-danger/10 border border-signal-danger/30 rounded-lg flex items-center gap-3 text-signal-danger"
+                className="mt-4 p-4 bg-signal-danger/10 border border-signal-danger/30 rounded-lg flex items-start gap-3 text-signal-danger"
               >
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                <p className="text-sm">{error}</p>
+                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Import failed</p>
+                  <p className="text-sm mt-1 text-signal-danger/80">{displayError}</p>
+                </div>
               </motion.div>
             )}
 
             <Button
               className="w-full mt-4 py-3"
               onClick={handleLoadCustom}
-              disabled={isLoading || !fileName}
+              disabled={isLoading || !fileName || !!localError}
             >
               {isLoading ? (
                 <>
@@ -216,7 +240,7 @@ export function ImportPage({ onLoadDemo, onLoadCustom, isLoading, error }: Impor
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="card p-4"
+            className="card p-4 mt-6"
           >
             <h3 className="font-semibold text-signal-fg mb-3 flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-signal-warning" />

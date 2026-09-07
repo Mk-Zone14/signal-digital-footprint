@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { cn } from '../utils/helpers';
 import { formatDuration } from '../utils/helpers';
-import { PeakHoursData } from '../analytics';
+import { PeakHoursData } from '../types';
 
 interface PeakHoursProps {
   data: PeakHoursData[];
@@ -14,8 +14,15 @@ export function PeakHours({ data, className }: PeakHoursProps) {
   const maxCount = useMemo(() => Math.max(...data.map(d => d.activityCount), 1), [data]);
   const maxDuration = useMemo(() => Math.max(...data.map(d => d.totalDuration), 1), [data]);
 
-  const peakHour = useMemo(() => data.reduce((max, d) => d.activityCount > max.activityCount ? d : max), [data]);
-  const avgSession = useMemo(() => Math.round(data.reduce((sum, d) => sum + d.avgSessionLength, 0) / 24), [data]);
+  const peakHour = useMemo(() => {
+    if (!data || data.length === 0) return { hour: 0, activityCount: 0, topCategory: 'none' };
+    return data.reduce((max, d) => d.activityCount > max.activityCount ? d : max);
+  }, [data]);
+  
+  const avgSession = useMemo(() => {
+    if (!data || data.length === 0) return 0;
+    return Math.round(data.reduce((sum, d) => sum + d.avgSessionLength, 0) / data.length);
+  }, [data]);
 
   const barWidth = 28;
   const chartHeight = 200;
@@ -28,60 +35,62 @@ export function PeakHours({ data, className }: PeakHoursProps) {
 
   return (
     <div className={cn('relative', className)}>
-      <div className="flex items-end justify-between h-[230px] gap-1 px-2" role="img" aria-label="Peak hours activity chart">
-        {data.map((hour, idx) => {
-          const isPeak = hour.hour === peakHour.hour;
-          const isHovered = hoveredHour === hour.hour;
-          const height = Math.max(4, (hour.activityCount / maxCount) * (chartHeight - paddingTop));
-          const durationHeight = Math.max(2, (hour.totalDuration / maxDuration) * (chartHeight - paddingTop));
+      <div className="overflow-x-auto no-scrollbar pb-2">
+        <div className="flex items-end justify-between h-[230px] gap-1 px-2 min-w-[700px]" role="img" aria-label="Peak hours activity chart">
+          {data.map((hour, idx) => {
+            const isPeak = hour.hour === peakHour.hour;
+            const isHovered = hoveredHour === hour.hour;
+            const height = Math.max(4, (hour.activityCount / maxCount) * (chartHeight - paddingTop));
+            const durationHeight = Math.max(2, (hour.totalDuration / maxDuration) * (chartHeight - paddingTop));
 
-          return (
-            <div
-              key={hour.hour}
-              className="relative flex flex-col items-center cursor-pointer group"
-              onMouseEnter={() => setHoveredHour(hour.hour)}
-              onMouseLeave={() => setHoveredHour(null)}
-              style={{ width: barWidth }}
-            >
+            return (
               <div
-                className={cn(
-                  'relative w-full rounded-t transition-all duration-200',
-                  isPeak && 'bg-signal-accent',
-                  !isPeak && 'bg-signal-borderHover',
-                  isHovered && 'bg-signal-accent',
-                )}
-                style={{
-                  height: `${height}px`,
-                  minHeight: '4px',
-                }}
+                key={hour.hour}
+                className="relative flex flex-col items-center cursor-pointer group"
+                onMouseEnter={() => setHoveredHour(hour.hour)}
+                onMouseLeave={() => setHoveredHour(null)}
+                style={{ width: barWidth }}
               >
-                {isPeak && (
-                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-medium text-signal-accent whitespace-nowrap bg-signal-bg px-1 rounded">
-                    PEAK
-                  </div>
-                )}
+                <div
+                  className={cn(
+                    'relative w-full rounded-t transition-all duration-200',
+                    isPeak && 'bg-signal-accent',
+                    !isPeak && 'bg-signal-borderHover',
+                    isHovered && 'bg-signal-accent',
+                  )}
+                  style={{
+                    height: `${height}px`,
+                    minHeight: '4px',
+                  }}
+                >
+                  {isPeak && (
+                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-medium text-signal-accent whitespace-nowrap bg-signal-bg px-1 rounded">
+                      PEAK
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  className={cn(
+                    'absolute bottom-0 w-full rounded-b transition-all duration-200 bg-signal-accent/20',
+                    isHovered && 'bg-signal-accent/40',
+                  )}
+                  style={{ height: `${durationHeight}px` }}
+                />
+
+                <span
+                  className={cn(
+                    'mt-2 text-[10px] font-mono font-medium transition-colors',
+                    (isPeak || isHovered) && 'text-signal-accent',
+                    !isPeak && !isHovered && 'text-signal-fgSubtle'
+                  )}
+                >
+                  {hour.hour === 0 ? '12a' : hour.hour < 12 ? `${hour.hour}a` : hour.hour === 12 ? '12p' : `${hour.hour - 12}p`}
+                </span>
               </div>
-
-              <div
-                className={cn(
-                  'absolute bottom-0 w-full rounded-b transition-all duration-200 bg-signal-accent/20',
-                  isHovered && 'bg-signal-accent/40',
-                )}
-                style={{ height: `${durationHeight}px` }}
-              />
-
-              <span
-                className={cn(
-                  'mt-2 text-[10px] font-mono font-medium transition-colors',
-                  (isPeak || isHovered) && 'text-signal-accent',
-                  'text-signal-fgSubtle'
-                )}
-              >
-                {hour.hour === 0 ? '12a' : hour.hour < 12 ? `${hour.hour}a` : hour.hour === 12 ? '12p' : `${hour.hour - 12}p`}
-              </span>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {hoveredData && (
@@ -130,7 +139,7 @@ export function PeakHours({ data, className }: PeakHoursProps) {
           </div>
           <div>
             <p className="text-xs text-signal-fgSubtle uppercase tracking-wide">Most Active Category</p>
-            <p className="font-display text-lg font-bold text-signal-fg mt-1">{peakHour.topCategory}</p>
+            <p className="font-display text-lg font-bold text-signal-fg mt-1 capitalize">{peakHour.topCategory.replace('-', '/')}</p>
           </div>
         </div>
       </div>

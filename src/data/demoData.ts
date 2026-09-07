@@ -1,4 +1,5 @@
 import { Activity, TimelineEvent, Interest, Skill, Category, DemoData, SkillHistoryPoint } from '../types';
+import { REFERENCE_DATE } from '../analytics';
 
 const categories: Category[] = [
   'coding',
@@ -132,14 +133,25 @@ const activityTitles: Record<Category, string[]> = {
   ],
 };
 
-function randomDate(start: Date, end: Date): Date {
-  return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+/**
+ * Seeded PRNG (mulberry32) — deterministic pseudo-random number generator.
+ * Returns a function that produces numbers in [0, 1) on each call.
+ */
+function createSeededRNG(seed: number): () => number {
+  let state = seed | 0;
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 function generateActivities(): Activity[] {
+  const rng = createSeededRNG(42);
   const activities: Activity[] = [];
   const startDate = new Date('2025-03-01');
-  const endDate = new Date('2025-09-07');
+  const endDate = REFERENCE_DATE;
   let id = 1;
 
   const categoryWeights: Record<Category, number> = {
@@ -162,10 +174,10 @@ function generateActivities(): Activity[] {
 
     const dayOfWeek = currentDate.getDay();
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-    const dayActivityCount = Math.max(1, Math.round(activitiesPerDay * (isWeekend ? 0.6 : 1.0) * (0.7 + Math.random() * 0.6)));
+    const dayActivityCount = Math.max(1, Math.round(activitiesPerDay * (isWeekend ? 0.6 : 1.0) * (0.7 + rng() * 0.6)));
 
     for (let i = 0; i < dayActivityCount; i++) {
-      const rand = Math.random();
+      const rand = rng();
       let cumulative = 0;
       let selectedCategory: Category = 'coding';
 
@@ -177,13 +189,13 @@ function generateActivities(): Activity[] {
         }
       }
 
-      const title = activityTitles[selectedCategory][Math.floor(Math.random() * activityTitles[selectedCategory].length)];
-      const platform = platforms[selectedCategory][Math.floor(Math.random() * platforms[selectedCategory].length)];
-      const tagCount = 1 + Math.floor(Math.random() * 3);
-      const shuffledTags = [...tagsByCategory[selectedCategory]].sort(() => 0.5 - Math.random());
+      const title = activityTitles[selectedCategory][Math.floor(rng() * activityTitles[selectedCategory].length)];
+      const platform = platforms[selectedCategory][Math.floor(rng() * platforms[selectedCategory].length)];
+      const tagCount = 1 + Math.floor(rng() * 3);
+      const shuffledTags = [...tagsByCategory[selectedCategory]].sort(() => 0.5 - rng());
       const tags = shuffledTags.slice(0, tagCount);
 
-      const baseDuration = {
+      const baseDuration: number = {
         coding: 90,
         'ai-ml': 120,
         finance: 60,
@@ -194,8 +206,8 @@ function generateActivities(): Activity[] {
         projects: 100,
       }[selectedCategory];
 
-      const duration = Math.round(baseDuration * (0.5 + Math.random()) * (isWeekend ? 1.3 : 1.0));
-      const impactScore = Math.round(30 + Math.random() * 70 * (duration / 120));
+      const duration = Math.round(baseDuration * (0.5 + rng()) * (isWeekend ? 1.3 : 1.0));
+      const impactScore = Math.round(30 + rng() * 70 * (duration / 120));
 
       activities.push({
         id: `act_${id++}`,
@@ -213,7 +225,7 @@ function generateActivities(): Activity[] {
   return activities.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
-function generateTimelineEvents(activities: Activity[]): TimelineEvent[] {
+function generateTimelineEvents(_activities: Activity[]): TimelineEvent[] {
   const events: TimelineEvent[] = [
     {
       id: 'tl_1',
@@ -316,7 +328,10 @@ function generateTimelineEvents(activities: Activity[]): TimelineEvent[] {
   return events;
 }
 
+/** Deterministic interest generation — no Math.random() */
 function generateInterests(activities: Activity[]): Interest[] {
+  const rng = createSeededRNG(7);
+
   const categoryActivityCount: Record<Category, number> = {} as Record<Category, number>;
   const categoryProjectCount: Record<Category, number> = {} as Record<Category, number>;
 
@@ -344,7 +359,7 @@ function generateInterests(activities: Activity[]): Interest[] {
     const count = categoryActivityCount[item.category] || 0;
     const projectCount = categoryProjectCount[item.category] || 0;
     const strength = Math.min(100, Math.round((count / totalActivities) * 100 * 3.5 + 15));
-    const growth = Math.round(-10 + Math.random() * 50);
+    const growth = Math.round(-10 + rng() * 50);
 
     return {
       id: `int_${idx + 1}`,
@@ -359,7 +374,10 @@ function generateInterests(activities: Activity[]): Interest[] {
   }).sort((a, b) => b.strength - a.strength);
 }
 
-function generateSkills(activities: Activity[]): Skill[] {
+/** Deterministic skill generation */
+function generateSkills(_activities: Activity[]): Skill[] {
+  const rng = createSeededRNG(99);
+
   const skillDefinitions = [
     { name: 'Python', category: 'coding' as Category, baseLevel: 85, growthRate: 0.3 },
     { name: 'AI / ML Engineering', category: 'ai-ml' as Category, baseLevel: 78, growthRate: 0.5 },
@@ -372,7 +390,6 @@ function generateSkills(activities: Activity[]): Skill[] {
   ];
 
   const startDate = new Date('2025-03-01');
-  const endDate = new Date('2025-09-07');
 
   return skillDefinitions.map((def, idx) => {
     const history: SkillHistoryPoint[] = [];
@@ -382,7 +399,7 @@ function generateSkills(activities: Activity[]): Skill[] {
       const date = new Date(startDate);
       date.setMonth(date.getMonth() + m);
       const progress = m / months;
-      const noise = (Math.random() - 0.5) * 3;
+      const noise = (rng() - 0.5) * 3;
       const level = Math.min(100, Math.max(0, Math.round(def.baseLevel * (0.6 + progress * 0.4) + def.growthRate * progress * 20 + noise)));
 
       history.push({

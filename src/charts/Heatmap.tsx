@@ -13,10 +13,22 @@ const WEEKS_TO_SHOW = 26;
 const CELL_SIZE = 13;
 const CELL_GAP = 2;
 const MONTH_LABEL_WIDTH = 36;
+const PADDING_TOP = 24;
+const PADDING_BOTTOM = 16;
+const PADDING_RIGHT = 16;
 
 export function Heatmap({ data, selectedCategory, onDayClick, className }: HeatmapProps) {
   const { cells, weeks, monthPositions, maxCount, dateRange } = useMemo(() => {
-    const endDate = new Date('2025-09-07');
+    // Find the most recent date in the data, or use today as fallback
+    let maxDateStr = '';
+    for (const dateStr of data.keys()) {
+      if (dateStr > maxDateStr) maxDateStr = dateStr;
+    }
+    
+    const endDate = maxDateStr ? new Date(maxDateStr) : new Date();
+    // Ensure endDate is at least at the end of its day to avoid timezone shifts
+    endDate.setHours(23, 59, 59, 999);
+    
     const startDate = new Date(endDate);
     startDate.setDate(startDate.getDate() - WEEKS_TO_SHOW * 7);
 
@@ -59,12 +71,18 @@ export function Heatmap({ data, selectedCategory, onDayClick, className }: Heatm
 
     const monthPositions: Array<{ week: number; label: string }> = [];
     let lastMonth = -1;
+    let lastMonthWeek = -10; // ensure first label is added
+
     cells.forEach(cell => {
       const date = new Date(cell.date);
       const month = date.getMonth();
       if (month !== lastMonth) {
         lastMonth = month;
-        monthPositions.push({ week: cell.week, label: date.toLocaleDateString('en-US', { month: 'short' }) });
+        // Prevent month labels from overlapping if they are too close (e.g. within 3 weeks)
+        if (cell.week - lastMonthWeek > 3) {
+          monthPositions.push({ week: cell.week, label: date.toLocaleDateString('en-US', { month: 'short' }) });
+          lastMonthWeek = cell.week;
+        }
       }
     });
 
@@ -92,90 +110,97 @@ export function Heatmap({ data, selectedCategory, onDayClick, className }: Heatm
     return 0.3 + intensity * 0.7;
   };
 
+  const svgWidth = WEEKS_TO_SHOW * (CELL_SIZE + CELL_GAP) + MONTH_LABEL_WIDTH + PADDING_RIGHT;
+  const svgHeight = 7 * (CELL_SIZE + CELL_GAP) + PADDING_TOP + PADDING_BOTTOM;
+
   return (
-    <div className={cn('overflow-x-auto', className)}>
-      <svg
-        width={WEEKS_TO_SHOW * (CELL_SIZE + CELL_GAP) + MONTH_LABEL_WIDTH + 20}
-        height={7 * (CELL_SIZE + CELL_GAP) + 40}
-        className="block"
-        style={{ maxWidth: '100%' }}
-      >
-        <defs>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-            <feMerge>
-              <feMerge in="coloredBlur" />
-              <feMerge in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
+    <div className={cn('overflow-x-auto no-scrollbar', className)}>
+      <div className="min-w-fit">
+        <svg
+          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+          preserveAspectRatio="xMinYMin meet"
+          className="block w-full h-auto"
+          style={{ minWidth: `${svgWidth}px` }}
+        >
+          <defs>
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+              <feMerge>
+                <feMerge in="coloredBlur" />
+                <feMerge in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
 
-        {monthPositions.map((month, idx) => (
-          <text
-            key={month.label}
-            x={month.week * (CELL_SIZE + CELL_GAP) + MONTH_LABEL_WIDTH + 4}
-            y={-4}
-            className="text-signal-fgSubtle text-[10px] font-medium"
-            textAnchor="start"
-          >
-            {month.label}
-          </text>
-        ))}
+          {monthPositions.map((month) => (
+            <text
+              key={month.label}
+              x={month.week * (CELL_SIZE + CELL_GAP) + MONTH_LABEL_WIDTH}
+              y={PADDING_TOP - 8}
+              className="text-signal-fgSubtle text-[10px] font-medium tracking-wide uppercase"
+              textAnchor="start"
+              fill="currentColor"
+            >
+              {month.label}
+            </text>
+          ))}
 
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dayIdx) => (
-          <text
-            key={day}
-            x={MONTH_LABEL_WIDTH - 8}
-            y={dayIdx * (CELL_SIZE + CELL_GAP) + CELL_SIZE - 2 + 20}
-            className="text-signal-fgSubtle text-[10px] font-medium"
-            textAnchor="end"
-            dominantBaseline="middle"
-          >
-            {dayIdx === 0 || dayIdx === 6 ? day : dayIdx === 1 || dayIdx === 3 || dayIdx === 5 ? day : ''}
-          </text>
-        ))}
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dayIdx) => (
+            <text
+              key={day}
+              x={MONTH_LABEL_WIDTH - 8}
+              y={dayIdx * (CELL_SIZE + CELL_GAP) + (CELL_SIZE / 2) + PADDING_TOP}
+              className="text-signal-fgSubtle text-[10px] font-medium tracking-wide uppercase"
+              textAnchor="end"
+              dominantBaseline="middle"
+              fill="currentColor"
+            >
+              {dayIdx === 0 || dayIdx === 6 ? day : dayIdx === 1 || dayIdx === 3 || dayIdx === 5 ? day : ''}
+            </text>
+          ))}
 
-        {cells.map(cell => {
-          const color = getCellColor(cell.intensity, cell.categories);
-          const opacity = getOpacity(cell.intensity);
-          const x = cell.week * (CELL_SIZE + CELL_GAP) + MONTH_LABEL_WIDTH;
-          const y = cell.day * (CELL_SIZE + CELL_GAP) + 20;
+          {cells.map(cell => {
+            const color = getCellColor(cell.intensity, cell.categories);
+            const opacity = getOpacity(cell.intensity);
+            const x = cell.week * (CELL_SIZE + CELL_GAP) + MONTH_LABEL_WIDTH;
+            const y = cell.day * (CELL_SIZE + CELL_GAP) + PADDING_TOP;
 
-          const isSelected = selectedCategory && cell.categories.includes(selectedCategory);
+            const isSelected = selectedCategory && cell.categories.includes(selectedCategory);
 
-          return (
-            <rect
-              key={cell.date}
-              x={x}
-              y={y}
-              width={CELL_SIZE}
-              height={CELL_SIZE}
-              rx={2}
-              fill={color}
-              fillOpacity={opacity}
-              filter={cell.intensity > 0.7 && isSelected ? 'url(#glow)' : 'none'}
-              className="transition-all duration-150 cursor-pointer"
-              onMouseEnter={() => {}}
-              onClick={() => onDayClick?.(cell.date, { count: cell.count, duration: cell.duration, categories: cell.categories })}
-              style={{
-                transformOrigin: `${x + CELL_SIZE / 2}px ${y + CELL_SIZE / 2}px`,
-              }}
-              onMouseOver={(e) => {
-                const rect = e.currentTarget;
-                rect.style.transform = 'scale(1.3)';
-                rect.style.zIndex = '10';
-              }}
-              onMouseOut={(e) => {
-                const rect = e.currentTarget;
-                rect.style.transform = 'scale(1)';
-                rect.style.zIndex = 'auto';
-              }}
-            />
-          );
-        })}
-      </svg>
+            return (
+              <rect
+                key={cell.date}
+                x={x}
+                y={y}
+                width={CELL_SIZE}
+                height={CELL_SIZE}
+                rx={2}
+                fill={color}
+                fillOpacity={opacity}
+                filter={cell.intensity > 0.7 && isSelected ? 'url(#glow)' : 'none'}
+                className="transition-all duration-150 cursor-pointer"
+                onMouseEnter={() => {}}
+                onClick={() => onDayClick?.(cell.date, { count: cell.count, duration: cell.duration, categories: cell.categories })}
+                style={{
+                  transformOrigin: `${x + CELL_SIZE / 2}px ${y + CELL_SIZE / 2}px`,
+                }}
+                onMouseOver={(e) => {
+                  const rect = e.currentTarget;
+                  rect.style.transform = 'scale(1.3)';
+                  rect.style.zIndex = '10';
+                }}
+                onMouseOut={(e) => {
+                  const rect = e.currentTarget;
+                  rect.style.transform = 'scale(1)';
+                  rect.style.zIndex = 'auto';
+                }}
+              />
+            );
+          })}
+        </svg>
+      </div>
 
-      <div className="flex items-center gap-4 mt-4 pt-4 border-t border-signal-border">
+      <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-signal-border">
         <div className="flex items-center gap-2">
           <span className="text-xs text-signal-fgSubtle">Less</span>
           <div className="flex items-center gap-1">

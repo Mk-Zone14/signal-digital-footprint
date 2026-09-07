@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { cn } from '../utils/helpers';
-import type { DigitalDNA } from '../analytics';
+import { categoryColors } from '../analytics';
+import type { DigitalDNA } from '../types';
 
 interface DigitalDNAProps {
   data: DigitalDNA;
@@ -18,13 +19,13 @@ const dimensions = [
 
 export function DigitalDNA({ data, className }: DigitalDNAProps) {
   const { width, height, centerX, centerY, maxRadius } = useMemo(() => {
-    const size = 300;
+    const size = 360;
     return {
       width: size,
       height: size,
       centerX: size / 2,
       centerY: size / 2,
-      maxRadius: size / 2 - 30,
+      maxRadius: size / 2 - 60,
     };
   }, []);
 
@@ -55,7 +56,7 @@ export function DigitalDNA({ data, className }: DigitalDNAProps) {
 
   return (
     <div className={cn('flex flex-col items-center', className)}>
-      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="w-full max-w-[300px]">
+      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="w-full max-w-[360px] overflow-visible">
         <defs>
           <radialGradient id="radarFill" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor="#00D4AA" stopOpacity="0.25" />
@@ -91,10 +92,36 @@ export function DigitalDNA({ data, className }: DigitalDNAProps) {
         />
 
         {dimensions.map((dim, i) => {
-          const angle = startAngle + i * angleStep;
-          const labelRadius = maxRadius + 22;
+          // Normalize angle to [0, 2PI)
+          let angle = (startAngle + i * angleStep) % (Math.PI * 2);
+          if (angle < 0) angle += Math.PI * 2;
+          
+          const labelRadius = maxRadius + 24;
           const labelPoint = getPoint(angle, labelRadius);
           const axisPoint = getPoint(angle, maxRadius);
+          
+          // Determine alignment based on angle quadrant
+          // 0 = right, PI/2 = bottom, PI = left, 3PI/2 = top
+          const isTop = Math.abs(angle - 1.5 * Math.PI) < 0.1;
+          const isBottom = Math.abs(angle - 0.5 * Math.PI) < 0.1;
+          const isRight = angle > 3 * Math.PI / 2 || angle < Math.PI / 2;
+          
+          let anchor = 'middle';
+          let dx = 0;
+          if (!isTop && !isBottom) {
+            anchor = isRight ? 'start' : 'end';
+            dx = isRight ? 8 : -8;
+          }
+          
+          let baseline = 'middle';
+          let dy = 0;
+          if (isTop) {
+            baseline = 'auto';
+            dy = -4;
+          } else if (isBottom) {
+            baseline = 'hanging';
+            dy = 4;
+          }
 
           return (
             <g key={dim.key}>
@@ -109,11 +136,12 @@ export function DigitalDNA({ data, className }: DigitalDNAProps) {
               <text
                 x={labelPoint.x}
                 y={labelPoint.y}
-                textAnchor={angle === -Math.PI / 2 ? 'middle' : angle < 0 ? 'end' : angle > Math.PI / 2 ? 'end' : 'start'}
-                dominantBaseline={angle > 0 ? 'hanging' : 'auto'}
-                className="text-xs font-medium text-signal-fgMuted"
-                dx={angle === -Math.PI / 2 ? 0 : angle < 0 ? -8 : angle > Math.PI / 2 ? -8 : 8}
-                dy={angle === -Math.PI / 2 ? -4 : angle > 0 ? 4 : 0}
+                textAnchor={anchor}
+                dominantBaseline={baseline}
+                className="text-[11px] font-semibold text-signal-fgMuted tracking-wider uppercase"
+                fill="currentColor"
+                dx={dx}
+                dy={dy}
               >
                 {dim.label}
               </text>

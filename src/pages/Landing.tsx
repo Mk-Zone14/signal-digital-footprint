@@ -1,9 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { ArrowRight, Download, BarChart2, Target, TrendingUp, Brain, Zap, Sparkles } from 'lucide-react';
 import { cn } from '../utils/helpers';
+import { Heatmap } from '../charts/Heatmap';
+import { getDemoData } from '../data/demoData';
+import { getFilteredActivities, getHeatmapData } from '../analytics';
 
 const features = [
   {
@@ -31,7 +34,7 @@ const features = [
     title: 'Timeline of Milestones',
     description: 'Vertical timeline of your shipped projects, publications, achievements. Filter by category, search by keyword.',
   },
-{
+  {
     icon: Sparkles,
     title: 'Generate Your Digital Identity Card',
     description: 'Shareable profile card with archetype, signal score, top signals, peak hours, and momentum. Export as PNG.',
@@ -49,6 +52,13 @@ export function Landing({ onExploreDemo, onImportData }: { onExploreDemo: () => 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);
 
+  // Use deterministic demo data for the preview
+  const heatmapData = useMemo(() => {
+    const rawData = getDemoData();
+    const activities = getFilteredActivities(rawData.activities, 'all', []);
+    return getHeatmapData(activities);
+  }, []);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -58,8 +68,8 @@ export function Landing({ onExploreDemo, onImportData }: { onExploreDemo: () => 
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = canvas.offsetWidth * dpr;
-      canvas.height = canvas.offsetHeight * dpr;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
       ctx.scale(dpr, dpr);
     };
 
@@ -71,8 +81,8 @@ export function Landing({ onExploreDemo, onImportData }: { onExploreDemo: () => 
 
     for (let i = 0; i < 60; i++) {
       particles.push({
-        x: Math.random() * canvas.offsetWidth,
-        y: Math.random() * canvas.offsetHeight,
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
         vx: (Math.random() - 0.5) * 0.3,
         vy: (Math.random() - 0.5) * 0.3,
         size: Math.random() * 2 + 0.5,
@@ -81,19 +91,18 @@ export function Landing({ onExploreDemo, onImportData }: { onExploreDemo: () => 
       });
     }
 
-    let mouseX = canvas.offsetWidth / 2;
-    let mouseY = canvas.offsetHeight / 2;
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      mouseX = e.clientX - rect.left;
-      mouseY = e.clientY - rect.top;
+      mouseX = e.clientX;
+      mouseY = e.clientY;
     };
 
-    canvas.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove);
 
     const animate = () => {
-      ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
       particles.forEach(p => {
         const dx = mouseX - p.x;
@@ -111,10 +120,10 @@ export function Landing({ onExploreDemo, onImportData }: { onExploreDemo: () => 
         p.x += p.vx;
         p.y += p.vy;
 
-        if (p.x < 0) p.x = canvas.offsetWidth;
-        if (p.x > canvas.offsetWidth) p.x = 0;
-        if (p.y < 0) p.y = canvas.offsetHeight;
-        if (p.y > canvas.offsetHeight) p.y = 0;
+        if (p.x < 0) p.x = window.innerWidth;
+        if (p.x > window.innerWidth) p.x = 0;
+        if (p.y < 0) p.y = window.innerHeight;
+        if (p.y > window.innerHeight) p.y = 0;
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -149,7 +158,7 @@ export function Landing({ onExploreDemo, onImportData }: { onExploreDemo: () => 
 
     return () => {
       window.removeEventListener('resize', resize);
-      canvas.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mousemove', handleMouseMove);
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, []);
@@ -158,7 +167,7 @@ export function Landing({ onExploreDemo, onImportData }: { onExploreDemo: () => 
     <div className="min-h-screen bg-signal-bg relative overflow-hidden">
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 pointer-events-none opacity-50"
+        className="fixed inset-0 pointer-events-none opacity-50 z-0"
         aria-hidden="true"
       />
 
@@ -262,7 +271,7 @@ export function Landing({ onExploreDemo, onImportData }: { onExploreDemo: () => 
           transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
         >
           <h2 className="font-display text-3xl font-bold text-signal-fg text-center mb-12">Dashboard Preview</h2>
-          <div className="aspect-video bg-signal-bgElevated border border-signal-border rounded-2xl overflow-hidden relative">
+          <div className="aspect-video bg-signal-bgElevated border border-signal-border rounded-2xl overflow-hidden relative min-h-[500px]">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(0,212,170,0.08)_0%,_transparent_70%)]" />
             <div className="relative p-6 h-full flex flex-col">
               <div className="flex items-center justify-between mb-6">
@@ -288,10 +297,11 @@ export function Landing({ onExploreDemo, onImportData }: { onExploreDemo: () => 
                   <p className="text-xs text-signal-fgMuted uppercase tracking-wide mb-2">Signal Score</p>
                   <p className="font-display text-3xl font-bold text-signal-accent">87</p>
                 </div>
-                <div className="bg-signal-bg border border-signal-border rounded-xl p-4 col-span-2">
-                  <p className="text-xs text-signal-fgMuted uppercase tracking-wide mb-3">Activity Heatmap</p>
-                  <div className="h-24 bg-signal-bgElevated/50 rounded-lg flex items-center justify-center">
-                    <span className="text-signal-fgSubtle text-sm">[ 26-week contribution grid ]</span>
+                <div className="bg-signal-bg border border-signal-border rounded-xl p-4 col-span-2 overflow-hidden flex flex-col">
+                  <p className="text-xs text-signal-fgMuted uppercase tracking-wide mb-3 flex-shrink-0">Activity Heatmap</p>
+                  <div className="flex-1 min-h-0 relative">
+                    <div className="absolute inset-0 pointer-events-none z-10 fade-out-bottom bg-gradient-to-t from-signal-bg to-transparent h-12 bottom-0" />
+                    <Heatmap data={heatmapData} className="pointer-events-none scale-90 origin-top-left" />
                   </div>
                 </div>
               </div>

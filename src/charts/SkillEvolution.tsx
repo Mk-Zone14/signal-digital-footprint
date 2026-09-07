@@ -135,6 +135,7 @@ export function SkillEvolution({ skills, selectedSkills = [], onSkillToggle, cla
               y={y + 4}
               textAnchor="end"
               className="text-[10px] text-signal-fgSubtle font-mono"
+              fill="currentColor"
             >
               {level}
             </text>
@@ -156,7 +157,8 @@ export function SkillEvolution({ skills, selectedSkills = [], onSkillToggle, cla
               x={x}
               y={chartHeight - padding.bottom + 18}
               textAnchor="middle"
-              className="text-[10px] text-signal-fgSubtle font-medium"
+              className="text-[10px] text-signal-fgSubtle font-medium tracking-wide uppercase"
+              fill="currentColor"
             >
               {month}
             </text>
@@ -215,13 +217,13 @@ export function SkillEvolution({ skills, selectedSkills = [], onSkillToggle, cla
               strokeWidth="1"
               filter="drop-shadow(0 8px 24px rgba(0,0,0,0.4))"
             />
-            <text x={hoveredTooltip.x} y={hoveredTooltip.y - 20} textAnchor="middle" className="text-[11px] font-semibold text-signal-fg" pointerEvents="none">
+            <text x={hoveredTooltip.x} y={hoveredTooltip.y - 20} textAnchor="middle" className="text-[11px] font-semibold text-signal-fg" fill="currentColor" pointerEvents="none">
               {hoveredTooltip.skill.name}
             </text>
-            <text x={hoveredTooltip.x} y={hoveredTooltip.y - 5} textAnchor="middle" className="font-display text-xl font-bold text-signal-accent" pointerEvents="none">
+            <text x={hoveredTooltip.x} y={hoveredTooltip.y - 5} textAnchor="middle" className="font-display text-xl font-bold text-signal-accent" fill="currentColor" pointerEvents="none">
               {hoveredTooltip.point.level}
             </text>
-            <text x={hoveredTooltip.x} y={hoveredTooltip.y + 15} textAnchor="middle" className="text-[10px] text-signal-fgMuted font-mono" pointerEvents="none">
+            <text x={hoveredTooltip.x} y={hoveredTooltip.y + 15} textAnchor="middle" className="text-[10px] text-signal-fgMuted font-mono" fill="currentColor" pointerEvents="none">
               {new Date(hoveredTooltip.point.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </text>
           </g>

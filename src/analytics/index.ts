@@ -1,5 +1,7 @@
-import { Activity, Category, SignalScore, Archetype, PeakHoursData, DigitalDNA, MomentumData, Interest, Skill, TimelineEvent, DateRange, NavItem } from '../types';
-import { demoData } from '../data/demoData';
+import { Activity, Category, SignalScore, Archetype, PeakHoursData, DigitalDNA, MomentumData, Interest, Skill, TimelineEvent, DateRange } from '../types';
+
+/** Centralized reference date for all analytics — demo data revolves around this. */
+export const REFERENCE_DATE = new Date('2025-09-07');
 
 const categories: Category[] = ['coding', 'ai-ml', 'finance', 'filmmaking', 'reading', 'learning', 'social', 'projects'];
 
@@ -14,8 +16,17 @@ export const categoryColors: Record<Category, string> = {
   projects: '#8B5CF6',
 };
 
+/** Simple deterministic hash from a string — returns 0..1 */
+function hashString(str: string): number {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash + str.charCodeAt(i)) & 0xffffffff;
+  }
+  return (hash >>> 0) / 0xffffffff;
+}
+
 function filterActivitiesByDateRange(activities: Activity[], dateRange: DateRange): Activity[] {
-  const now = new Date('2025-09-07');
+  const now = REFERENCE_DATE;
   let cutoff: Date;
 
   switch (dateRange) {
@@ -44,14 +55,15 @@ function filterActivitiesByDateRange(activities: Activity[], dateRange: DateRang
 }
 
 function filterActivitiesByCategories(activities: Activity[], selectedCategories: Category[]): Activity[] {
-  if (selectedCategories.length === 0 || selectedCategories.includes('all' as Category)) {
+  if (selectedCategories.length === 0) {
     return activities;
   }
   return activities.filter(a => selectedCategories.includes(a.category));
 }
 
-export function getFilteredActivities(dateRange: DateRange, selectedCategories: Category[]): Activity[] {
-  let filtered = [...demoData.activities];
+/** Accepts the actual activities array — no longer imports demoData. */
+export function getFilteredActivities(activities: Activity[], dateRange: DateRange, selectedCategories: Category[]): Activity[] {
+  let filtered = [...activities];
   filtered = filterActivitiesByDateRange(filtered, dateRange);
   filtered = filterActivitiesByCategories(filtered, selectedCategories);
   return filtered;
@@ -78,19 +90,14 @@ export function calculateSignalScore(activities: Activity[]): SignalScore {
   const uniqueCategories = new Set(activities.map(a => a.category)).size;
   const exploration = Math.min(100, Math.round((uniqueCategories / categories.length) * 100 * 1.3));
 
-  const recentActivities = activities.filter(a => {
-    const date = new Date(a.date);
-    const thirtyDaysAgo = new Date('2025-09-07');
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    return date >= thirtyDaysAgo;
-  });
+  const thirtyDaysAgo = new Date(REFERENCE_DATE);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const sixtyDaysAgo = new Date(REFERENCE_DATE);
+  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
+  const recentActivities = activities.filter(a => new Date(a.date) >= thirtyDaysAgo);
   const previousActivities = activities.filter(a => {
     const date = new Date(a.date);
-    const thirtyDaysAgo = new Date('2025-09-07');
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const sixtyDaysAgo = new Date('2025-09-07');
-    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
     return date >= sixtyDaysAgo && date < thirtyDaysAgo;
   });
 
@@ -191,8 +198,7 @@ export function calculateArchetype(activities: Activity[]): Archetype {
     },
   };
 
-  const secondaryCategory = sortedCategories[1]?.category;
-  const secondaryWeight = secondaryCategory ? sortedCategories[1].duration / totalDuration : 0;
+  const secondaryWeight = sortedCategories[1] ? sortedCategories[1].duration / totalDuration : 0;
 
   const primary = archetypes[topCategory] || archetypes.coding;
   let confidence = Math.round(dominance * 100);
@@ -210,6 +216,7 @@ export function calculateArchetype(activities: Activity[]): Archetype {
   };
 }
 
+/** Deterministic peak hours — uses hash of date+category instead of Math.random() */
 export function calculatePeakHours(activities: Activity[]): PeakHoursData[] {
   const hourStats: Record<number, { count: number; duration: number; categories: Record<Category, number> }> = {};
 
@@ -219,8 +226,11 @@ export function calculatePeakHours(activities: Activity[]): PeakHoursData[] {
   }
 
   activities.forEach(a => {
-    const hour = new Date(a.date + 'T12:00:00').getHours();
-    const simulatedHour = (hour + Math.floor(Math.random() * 6) - 3 + 24) % 24;
+    // Deterministic hour assignment based on activity id + date
+    const h = hashString(a.id + a.date);
+    const offset = Math.floor(h * 6) - 3;
+    const baseHour = new Date(a.date + 'T12:00:00').getHours();
+    const simulatedHour = ((baseHour + offset) % 24 + 24) % 24;
     hourStats[simulatedHour].count++;
     hourStats[simulatedHour].duration += a.duration;
     hourStats[simulatedHour].categories[a.category]++;
@@ -262,8 +272,9 @@ export function calculateDigitalDNA(activities: Activity[], interests: Interest[
   return { builder, explorer, researcher, creator, connector, learner };
 }
 
-export function calculateMomentum(activities: Activity[], interests: Interest[]): MomentumData {
-  const now = new Date('2025-09-07');
+/** Deterministic momentum — projection uses hash instead of Math.random() */
+export function calculateMomentum(activities: Activity[], _interests: Interest[]): MomentumData {
+  const now = REFERENCE_DATE;
   const thirtyDaysAgo = new Date(now);
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const sixtyDaysAgo = new Date(now);
@@ -309,14 +320,17 @@ export function calculateMomentum(activities: Activity[], interests: Interest[])
     consistency: mostConsistent[1],
   };
 
+  // Deterministic projection using hash
   const projection: MomentumData['projection'] = [];
   for (let i = 1; i <= 90; i += 7) {
     const date = new Date(now);
     date.setDate(date.getDate() + i);
+    const dateStr = date.toISOString().split('T')[0];
     const decay = Math.exp(-i / 60);
-    const projectedScore = Math.round(current * decay + Math.random() * 10 - 5);
+    const noise = (hashString(`projection-${dateStr}`) * 10) - 5;
+    const projectedScore = Math.round(current * decay + noise);
     projection.push({
-      date: date.toISOString().split('T')[0],
+      date: dateStr,
       projectedScore: Math.max(-50, Math.min(100, projectedScore)),
       confidence: Math.max(0.3, 0.9 - i / 120),
     });
@@ -332,24 +346,20 @@ export function calculateMomentum(activities: Activity[], interests: Interest[])
 }
 
 export function calculateInterestStrength(activities: Activity[], interests: Interest[]): Interest[] {
+  if (!interests) return [];
   return interests.map(interest => {
     const categoryActivities = activities.filter(a => a.category === interest.category);
     const activityCount = categoryActivities.length;
     const projectCount = categoryActivities.filter(a => a.tags.some(t => ['SaaS', 'Open Source', 'Side Project', 'Startup', 'Research', 'Tool', 'Library', 'Platform'].includes(t))).length;
 
-    const recentActivities = categoryActivities.filter(a => {
-      const date = new Date(a.date);
-      const thirtyDaysAgo = new Date('2025-09-07');
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      return date >= thirtyDaysAgo;
-    });
+    const thirtyDaysAgo = new Date(REFERENCE_DATE);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const sixtyDaysAgo = new Date(REFERENCE_DATE);
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
+    const recentActivities = categoryActivities.filter(a => new Date(a.date) >= thirtyDaysAgo);
     const previousActivities = categoryActivities.filter(a => {
       const date = new Date(a.date);
-      const thirtyDaysAgo = new Date('2025-09-07');
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const sixtyDaysAgo = new Date('2025-09-07');
-      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
       return date >= sixtyDaysAgo && date < thirtyDaysAgo;
     });
 
@@ -368,13 +378,13 @@ export function calculateInterestStrength(activities: Activity[], interests: Int
 }
 
 export function calculateSkillGrowth(skills: Skill[], activities: Activity[]): Skill[] {
+  if (!skills) return [];
   return skills.map(skill => {
     const categoryActivities = activities.filter(a => a.category === skill.category);
     const recentActivityCount = categoryActivities.filter(a => {
-      const date = new Date(a.date);
-      const thirtyDaysAgo = new Date('2025-09-07');
+      const thirtyDaysAgo = new Date(REFERENCE_DATE);
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      return date >= thirtyDaysAgo;
+      return new Date(a.date) >= thirtyDaysAgo;
     }).length;
 
     const boost = Math.min(5, recentActivityCount * 0.3);
@@ -423,27 +433,25 @@ export function searchActivities(query: string, activities: Activity[], skills: 
   const lowerQuery = query.toLowerCase();
 
   return {
-    activities: activities.filter(a =>
+    activities: (activities || []).filter(a =>
       a.title.toLowerCase().includes(lowerQuery) ||
       a.category.toLowerCase().includes(lowerQuery) ||
       a.platform.toLowerCase().includes(lowerQuery) ||
-      a.tags.some(t => t.toLowerCase().includes(lowerQuery))
+      (a.tags || []).some(t => t.toLowerCase().includes(lowerQuery))
     ),
-    skills: skills.filter(s =>
+    skills: (skills || []).filter(s =>
       s.name.toLowerCase().includes(lowerQuery) ||
       s.category.toLowerCase().includes(lowerQuery)
     ),
-    timeline: timelineEvents.filter(t =>
+    timeline: (timelineEvents || []).filter(t =>
       t.title.toLowerCase().includes(lowerQuery) ||
       t.description.toLowerCase().includes(lowerQuery) ||
       t.category.toLowerCase().includes(lowerQuery)
     ),
-    interests: interests.filter(i =>
+    interests: (interests || []).filter(i =>
       i.name.toLowerCase().includes(lowerQuery) ||
       i.category.toLowerCase().includes(lowerQuery) ||
-      i.relatedInterests.some(r => r.toLowerCase().includes(lowerQuery))
+      (i.relatedInterests || []).some(r => r.toLowerCase().includes(lowerQuery))
     ),
   };
 }
-
-export type { DigitalDNA, PeakHoursData } from '../types';

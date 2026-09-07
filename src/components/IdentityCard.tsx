@@ -1,11 +1,8 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { cn } from '../utils/helpers';
-import { formatDuration } from '../utils/helpers';
 import { categoryColors } from '../analytics';
 import { Archetype, SignalScore, DigitalDNA, MomentumData, PeakHoursData } from '../types';
-import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
-import { Card } from './ui/Card';
 import { exportAsImage } from '../utils/helpers';
 
 interface IdentityCardProps {
@@ -18,6 +15,10 @@ interface IdentityCardProps {
   className?: string;
 }
 
+export interface IdentityCardHandle {
+  exportCard: () => Promise<void>;
+}
+
 const dimensionLabels = {
   builder: 'Builder',
   explorer: 'Explorer',
@@ -27,34 +28,39 @@ const dimensionLabels = {
   learner: 'Learner',
 } as const;
 
-export function IdentityCard({ archetype, signalScore, digitalDNA, momentum, peakHours, username, className }: IdentityCardProps) {
+export const IdentityCard = forwardRef<IdentityCardHandle, IdentityCardProps>(({ archetype, signalScore, digitalDNA, momentum, peakHours, username, className }, ref) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
 
-  const peakHour = peakHours.reduce((max, h) => h.activityCount > max.activityCount ? h : max, peakHours[0]);
+  const peakHour = peakHours.length > 0
+    ? peakHours.reduce((max, h) => h.activityCount > max.activityCount ? h : max, peakHours[0])
+    : { hour: 0, activityCount: 0, topCategory: 'none' };
 
   const topDimensions = Object.entries(digitalDNA)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3);
 
-  const handleExport = async () => {
-    if (!cardRef.current) return;
-    setIsExporting(true);
-    try {
-      await exportAsImage(cardRef.current, `signal-identity-${username.toLowerCase()}.png`);
-    } catch (err) {
-      console.error('Export failed:', err);
-    } finally {
-      setIsExporting(false);
+  useImperativeHandle(ref, () => ({
+    exportCard: async () => {
+      if (!cardRef.current) return;
+      setIsExporting(true);
+      try {
+        await exportAsImage(cardRef.current, `signal-identity-${username.toLowerCase()}.png`);
+      } catch (err) {
+        console.error('Export failed:', err);
+      } finally {
+        setIsExporting(false);
+      }
     }
-  };
+  }));
 
   return (
     <div
       ref={cardRef}
       className={cn(
         'relative max-w-md mx-auto p-6 bg-signal-bg border border-signal-border rounded-2xl shadow-[0_0_60px_-10px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.02)] overflow-hidden',
-        className
+        className,
+        isExporting && 'rounded-none border-0 shadow-none'
       )}
       style={{ background: 'linear-gradient(180deg, #0A0B0D 0%, #0D1015 100%)' }}
     >
@@ -154,9 +160,10 @@ export function IdentityCard({ archetype, signalScore, digitalDNA, momentum, pea
               </span>
             </div>
             <div className="h-1.5 bg-signal-bg rounded-full overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.max(0, momentum.current + 50))}%` }}>
-                {momentum.current >= 0 ? 'bg-signal-accent' : 'bg-signal-danger'}
-              </div>
+              <div
+                className={cn('h-full rounded-full transition-all duration-500', momentum.current >= 0 ? 'bg-signal-accent' : 'bg-signal-danger')}
+                style={{ width: `${Math.min(100, Math.max(0, momentum.current + 50))}%` }}
+              />
             </div>
           </div>
         </div>
@@ -221,11 +228,10 @@ export function IdentityCard({ archetype, signalScore, digitalDNA, momentum, pea
             <p className="font-display text-xl font-bold text-signal-fg">{username}</p>
             <p className="text-xs text-signal-fgMuted">Digital Identity Card</p>
           </div>
-          <Button variant="secondary" size="sm" onClick={handleExport} disabled={isExporting} className="w-full sm:w-auto">
-            {isExporting ? 'Generating...' : 'Export Card'}
-          </Button>
         </div>
       </div>
     </div>
   );
-}
+});
+
+IdentityCard.displayName = 'IdentityCard';
