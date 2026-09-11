@@ -106,14 +106,14 @@ export function DigitalDNA({ data, className }: DigitalDNAProps) {
           const isBottom = Math.abs(angle - 0.5 * Math.PI) < 0.1;
           const isRight = angle > 3 * Math.PI / 2 || angle < Math.PI / 2;
           
-          let anchor = 'middle';
+          let anchor: 'start' | 'middle' | 'end' = 'middle';
           let dx = 0;
           if (!isTop && !isBottom) {
             anchor = isRight ? 'start' : 'end';
             dx = isRight ? 8 : -8;
           }
           
-          let baseline = 'middle';
+          let baseline: 'auto' | 'middle' | 'hanging' = 'middle';
           let dy = 0;
           if (isTop) {
             baseline = 'auto';
