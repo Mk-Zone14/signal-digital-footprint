@@ -85,8 +85,8 @@ export function validateActivityData(data: any): { valid: boolean; errors: strin
     errors.push('Missing or invalid "activities" array');
   } else {
     data.activities.forEach((act: any, idx: number) => {
-      if (!act.date || !act.category || !act.title || typeof act.duration !== 'number') {
-        errors.push(`Activity ${idx}: missing required fields (date, category, title, duration)`);
+      if ((!act.date && !act.timestamp) || !act.category || !act.title || typeof act.duration !== 'number') {
+        errors.push(`Activity ${idx}: missing required fields (date/timestamp, category, title, duration)`);
       }
     });
   }

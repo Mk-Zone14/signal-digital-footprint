@@ -16,17 +16,17 @@ import { Badge } from '../components/ui/Badge';
 import { formatDuration } from '../utils/helpers';
 import { categoryColors } from '../analytics';
 import { Download, TrendingUp, TrendingDown } from 'lucide-react';
-import { NavItem, Category, DateRange, Activity, Interest, Skill, DemoData, FilterState, SearchResult } from '../types';
+import { NavItem, Category, DateRange, Activity, Interest, Skill, DemoData, FilterState, SearchResult, V2Analytics } from '../types';
 import { cn } from '../utils/helpers';
 import type { SignalScore, Archetype, PeakHoursData, DigitalDNA as DigitalDNAType, MomentumData } from '../types';
 
 const tabConfigs: Record<NavItem, { title: string; description: string }> = {
   overview: { title: 'Overview', description: 'Your digital signal at a glance' },
   activity: { title: 'Activity', description: 'Heatmap, peak hours, and patterns' },
-  interests: { title: 'Interests', description: 'Constellation and interest breakdown' },
-  skills: { title: 'Skills', description: 'Skill evolution and progression' },
-  timeline: { title: 'Timeline', description: 'Milestones and achievements' },
-  identity: { title: 'Identity', description: 'Digital identity card and DNA' },
+  interests: { title: 'Interests', description: 'Topics, domains, and connections' },
+  skills: { title: 'Skills', description: 'Capabilities and growth trajectory' },
+  timeline: { title: 'Timeline', description: 'Key milestones and achievements' },
+  identity: { title: 'Identity', description: 'Your digital profile and signature' },
 };
 
 interface DashboardAnalytics {
@@ -45,6 +45,7 @@ interface DashboardAnalytics {
     timeline: Array<{ id: string; title: string; category: string; date: string; description: string }>;
     interests: Interest[];
   } | null;
+  v2Analytics?: V2Analytics;
 }
 
 interface DashboardProps {

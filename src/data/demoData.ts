@@ -208,10 +208,17 @@ function generateActivities(): Activity[] {
 
       const duration = Math.round(baseDuration * (0.5 + rng()) * (isWeekend ? 1.3 : 1.0));
       const impactScore = Math.round(30 + rng() * 70 * (duration / 120));
+      const hour = Math.floor(8 + rng() * 15);
+      const minute = Math.floor(rng() * 60);
+      const second = Math.floor(rng() * 60);
+      const dateStr = currentDate.toISOString().split('T')[0];
+      const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`;
+      const timestamp = `${dateStr}T${timeStr}Z`;
 
       activities.push({
         id: `act_${id++}`,
-        date: currentDate.toISOString().split('T')[0],
+        timestamp,
+        date: dateStr,
         category: selectedCategory,
         title,
         duration,
@@ -222,7 +229,7 @@ function generateActivities(): Activity[] {
     }
   }
 
-  return activities.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  return activities.sort((a, b) => new Date(a.timestamp || a.date).getTime() - new Date(b.timestamp || b.date).getTime());
 }
 
 function generateTimelineEvents(_activities: Activity[]): TimelineEvent[] {

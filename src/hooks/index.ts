@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Activity, Category, DateRange, DemoData, FilterState } from '../types';
+import { Category, DateRange, DemoData, FilterState } from '../types';
 import { demoData as defaultDemoData } from '../data/demoData';
 import {
   getFilteredActivities,
@@ -12,6 +12,8 @@ import {
   calculateSkillGrowth,
   getHeatmapData,
   searchActivities,
+  getV2Analytics,
+  normalizeActivity,
 } from '../analytics';
 
 export function useSignalData() {
@@ -36,7 +38,13 @@ export function useSignalData() {
 
   const loadCustomData = useCallback((customData: DemoData) => {
     setIsLoading(true);
-    setData(customData);
+    const normalizedActivities = Array.isArray(customData?.activities)
+      ? customData.activities.map((a, idx) => normalizeActivity(a, idx))
+      : [];
+    setData({
+      ...customData,
+      activities: normalizedActivities,
+    });
     setIsCustomData(true);
     setTimeout(() => setIsLoading(false), 300);
   }, []);
@@ -67,6 +75,11 @@ export function useAnalytics(data: DemoData, filters: FilterState) {
   const filteredActivities = useMemo(
     () => getFilteredActivities(data.activities, filters.dateRange, filters.categories),
     [data.activities, filters.dateRange, filters.categories]
+  );
+
+  const v2Analytics = useMemo(
+    () => getV2Analytics(filteredActivities),
+    [filteredActivities]
   );
 
   const signalScore = useMemo(() => calculateSignalScore(filteredActivities), [filteredActivities]);
@@ -105,6 +118,7 @@ export function useAnalytics(data: DemoData, filters: FilterState) {
 
   return {
     filteredActivities,
+    v2Analytics,
     signalScore,
     archetype,
     peakHours,
