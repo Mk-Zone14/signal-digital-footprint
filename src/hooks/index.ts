@@ -1,53 +1,54 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Category, DateRange, DemoData, FilterState } from '../types';
-import { demoData as defaultDemoData } from '../data/demoData';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import type { Category, DateRange, DemoData, FilterState } from '../types';
+import { demoData as defaultDemoData, DEMO_REFERENCE_DATE } from '../data/demoData';
+import { validateImportedData, type ImportValidationResult } from '../data/importData';
 import {
-  getFilteredActivities,
-  calculateSignalScore,
-  calculateArchetype,
-  calculatePeakHours,
-  calculateDigitalDNA,
-  calculateMomentum,
-  calculateInterestStrength,
-  calculateSkillGrowth,
-  getHeatmapData,
+  selectActivityScopes,
   searchActivities,
   getV2Analytics,
-  normalizeActivity,
 } from '../analytics';
 
 export function useSignalData() {
   const [data, setData] = useState<DemoData>(defaultDemoData);
   const [isLoading, setIsLoading] = useState(true);
   const [isCustomData, setIsCustomData] = useState(false);
+  const [referenceDate, setReferenceDate] = useState<Date>(() => new Date(DEMO_REFERENCE_DATE));
+  const loadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     // Simulate brief initialization for consistent loading state
-    const timer = setTimeout(() => {
+    loadingTimerRef.current = setTimeout(() => {
       setIsLoading(false);
     }, 300);
-    return () => clearTimeout(timer);
+    return () => {
+      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+    };
+  }, []);
+
+  const finishLoadingSoon = useCallback(() => {
+    if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+    loadingTimerRef.current = setTimeout(() => setIsLoading(false), 300);
   }, []);
 
   const loadDemoData = useCallback(() => {
     setIsLoading(true);
     setData(defaultDemoData);
     setIsCustomData(false);
-    setTimeout(() => setIsLoading(false), 300);
-  }, []);
+    setReferenceDate(new Date(DEMO_REFERENCE_DATE));
+    finishLoadingSoon();
+  }, [finishLoadingSoon]);
 
-  const loadCustomData = useCallback((customData: DemoData) => {
+  const loadCustomData = useCallback((payload: unknown): ImportValidationResult => {
+    const result = validateImportedData(payload);
+    if (!result.ok) return result;
+
     setIsLoading(true);
-    const normalizedActivities = Array.isArray(customData?.activities)
-      ? customData.activities.map((a, idx) => normalizeActivity(a, idx))
-      : [];
-    setData({
-      ...customData,
-      activities: normalizedActivities,
-    });
+    setData(result.value.data);
     setIsCustomData(true);
-    setTimeout(() => setIsLoading(false), 300);
-  }, []);
+    setReferenceDate(new Date(result.value.referenceDate));
+    finishLoadingSoon();
+    return result;
+  }, [finishLoadingSoon]);
 
   const exportData = useCallback(() => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -65,68 +66,44 @@ export function useSignalData() {
     data,
     isLoading,
     isCustomData,
+    referenceDate,
     loadDemoData,
     loadCustomData,
     exportData,
   };
 }
 
-export function useAnalytics(data: DemoData, filters: FilterState) {
-  const filteredActivities = useMemo(
-    () => getFilteredActivities(data.activities, filters.dateRange, filters.categories),
-    [data.activities, filters.dateRange, filters.categories]
+export function useAnalytics(data: DemoData, filters: FilterState, referenceDate: Date) {
+  const activityScopes = useMemo(
+    () => selectActivityScopes(
+      data.activities,
+      filters.dateRange,
+      filters.categories,
+      referenceDate
+    ),
+    [data.activities, filters.dateRange, filters.categories, referenceDate]
   );
 
   const v2Analytics = useMemo(
-    () => getV2Analytics(filteredActivities),
-    [filteredActivities]
-  );
-
-  const signalScore = useMemo(() => calculateSignalScore(filteredActivities), [filteredActivities]);
-  const archetype = useMemo(() => calculateArchetype(filteredActivities), [filteredActivities]);
-  const peakHours = useMemo(() => calculatePeakHours(filteredActivities), [filteredActivities]);
-
-  const interests = useMemo(
-    () => calculateInterestStrength(filteredActivities, data.interests),
-    [filteredActivities, data.interests]
-  );
-
-  const digitalDNA = useMemo(
-    () => calculateDigitalDNA(filteredActivities, interests),
-    [filteredActivities, interests]
-  );
-
-  const momentum = useMemo(
-    () => calculateMomentum(filteredActivities, interests),
-    [filteredActivities, interests]
-  );
-
-  const skills = useMemo(
-    () => calculateSkillGrowth(data.skills, filteredActivities),
-    [data.skills, filteredActivities]
-  );
-
-  const heatmapData = useMemo(
-    () => getHeatmapData(filteredActivities),
-    [filteredActivities]
+    () => getV2Analytics(activityScopes.visibleActivities, {
+      referenceDate,
+      comparisonActivities: activityScopes.comparisonSourceActivities,
+      historyActivities: activityScopes.analyticsSourceActivities,
+      comparisonWindowDays: activityScopes.comparisonWindowDays,
+    }),
+    [activityScopes, referenceDate]
   );
 
   const searchResults = useMemo(() => {
     if (!filters.searchQuery || filters.searchQuery.trim() === '') return null;
-    return searchActivities(filters.searchQuery, filteredActivities, skills, data.timelineEvents, interests);
-  }, [filters.searchQuery, filteredActivities, skills, data.timelineEvents, interests]);
+    return searchActivities(filters.searchQuery, activityScopes.visibleActivities, [], [], []);
+  }, [filters.searchQuery, activityScopes.visibleActivities]);
 
   return {
-    filteredActivities,
+    filteredActivities: activityScopes.visibleActivities,
+    ...activityScopes,
+    referenceDate,
     v2Analytics,
-    signalScore,
-    archetype,
-    peakHours,
-    interests,
-    digitalDNA,
-    momentum,
-    skills,
-    heatmapData,
     searchResults,
   };
 }

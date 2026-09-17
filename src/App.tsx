@@ -1,21 +1,40 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, type ComponentProps } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Landing } from './pages/Landing';
 import { ImportPage } from './pages/ImportPage';
 import { Dashboard } from './pages/Dashboard';
+import { DashboardErrorBoundary } from './components/DashboardErrorBoundary';
 import { useSignalData, useFilters, useAnalytics, useKeyboardShortcut } from './hooks';
-import { DemoData, NavItem } from './types';
+import { NavItem } from './types';
 
 type AppState = 'landing' | 'import' | 'dashboard';
+
+type AnalyticsDashboardProps = Omit<
+  ComponentProps<typeof Dashboard>,
+  'analytics' | 'searchResults'
+> & { referenceDate: Date };
+
+function AnalyticsDashboard({ data, filters, referenceDate, ...dashboardProps }: AnalyticsDashboardProps) {
+  const analytics = useAnalytics(data, filters, referenceDate);
+
+  return (
+    <Dashboard
+      {...dashboardProps}
+      data={data}
+      filters={filters}
+      analytics={analytics}
+      searchResults={analytics.searchResults}
+    />
+  );
+}
 
 function App() {
   const {
     data,
     isLoading,
-    isCustomData,
+    referenceDate,
     loadDemoData,
     loadCustomData,
-    exportData,
   } = useSignalData();
 
   const {
@@ -25,8 +44,6 @@ function App() {
     setCategories,
     setSearchQuery,
   } = useFilters();
-
-  const analytics = useAnalytics(data, filters);
 
   const [appState, setAppState] = useState<AppState>('landing');
   const [activeTab, setActiveTab] = useState<NavItem>('overview');
@@ -53,6 +70,16 @@ function App() {
     setSearchQuery('');
     setCategories([]);
   }, [setSearchQuery, setCategories]);
+
+  const handleRecoverWithDemo = useCallback(() => {
+    loadDemoData();
+    setActiveTab('overview');
+    setSearchOpen(false);
+    setSearchQuery('');
+    setCategories([]);
+    updateDateRange('all');
+    setAppState('dashboard');
+  }, [loadDemoData, setSearchQuery, setCategories, updateDateRange]);
 
   const handleFilterChange = useMemo(() => ({
     updateDateRange,
@@ -102,9 +129,10 @@ function App() {
                   loadDemoData();
                   setAppState('dashboard');
                 }}
-                onLoadCustom={(customData: DemoData) => {
-                  loadCustomData(customData);
-                  setAppState('dashboard');
+                onLoadCustom={(customData: unknown) => {
+                  const result = loadCustomData(customData);
+                  if (result.ok) setAppState('dashboard');
+                  return result;
                 }}
                 onBack={() => setAppState('landing')}
                 isLoading={isLoading}
@@ -124,23 +152,27 @@ function App() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
-              <Dashboard
-                data={data}
-                analytics={analytics}
-                filters={filters}
-                onFilterChange={handleFilterChange}
-                searchOpen={searchOpen}
-                onSearchOpen={handleSearchOpen}
-                onSearchClose={handleSearchClose}
-                onSearchQueryChange={handleSearchQueryChange}
-                searchResults={analytics.searchResults}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                sidebarCollapsed={sidebarCollapsed}
-                onToggleSidebar={() => setSidebarCollapsed(prev => !prev)}
-                onSignOut={handleSignOut}
-                isLoading={isLoading}
-              />
+              <DashboardErrorBoundary
+                onLoadDemo={handleRecoverWithDemo}
+                onReturnToImport={() => setAppState('import')}
+              >
+                <AnalyticsDashboard
+                  data={data}
+                  filters={filters}
+                  referenceDate={referenceDate}
+                  onFilterChange={handleFilterChange}
+                  searchOpen={searchOpen}
+                  onSearchOpen={handleSearchOpen}
+                  onSearchClose={handleSearchClose}
+                  onSearchQueryChange={handleSearchQueryChange}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  sidebarCollapsed={sidebarCollapsed}
+                  onToggleSidebar={() => setSidebarCollapsed(prev => !prev)}
+                  onSignOut={handleSignOut}
+                  isLoading={isLoading}
+                />
+              </DashboardErrorBoundary>
             </motion.div>
           </AnimatePresence>
         );

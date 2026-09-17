@@ -1,5 +1,7 @@
 import { Activity, TimelineEvent, Interest, Skill, Category, DemoData, SkillHistoryPoint } from '../types';
-import { REFERENCE_DATE } from '../analytics';
+
+/** Fixed end date for the deterministic demo dataset only. */
+export const DEMO_REFERENCE_DATE = new Date('2025-09-07T23:59:59.999Z');
 
 const categories: Category[] = [
   'coding',
@@ -151,7 +153,7 @@ function generateActivities(): Activity[] {
   const rng = createSeededRNG(42);
   const activities: Activity[] = [];
   const startDate = new Date('2025-03-01');
-  const endDate = REFERENCE_DATE;
+  const endDate = DEMO_REFERENCE_DATE;
   let id = 1;
 
   const categoryWeights: Record<Category, number> = {
@@ -170,9 +172,9 @@ function generateActivities(): Activity[] {
 
   for (let day = 0; day < totalDays; day++) {
     const currentDate = new Date(startDate);
-    currentDate.setDate(currentDate.getDate() + day);
+    currentDate.setUTCDate(currentDate.getUTCDate() + day);
 
-    const dayOfWeek = currentDate.getDay();
+    const dayOfWeek = currentDate.getUTCDay();
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
     const dayActivityCount = Math.max(1, Math.round(activitiesPerDay * (isWeekend ? 0.6 : 1.0) * (0.7 + rng() * 0.6)));
 

@@ -138,15 +138,72 @@ export interface TopicCooccurrenceEdge {
   count: number;
 }
 
+export interface TopicIndexEntry {
+  topic: string;
+  count: number;
+}
+
+export type ActivityNormalizationIssueCode =
+  | 'invalid-record'
+  | 'invalid-date'
+  | 'invalid-timestamp'
+  | 'invalid-duration'
+  | 'invalid-category'
+  | 'invalid-title'
+  | 'duplicate-id'
+  | 'fallback-id'
+  | 'malformed-optional-value'
+  | 'date-normalized-from-timestamp';
+
+export interface ActivityNormalizationIssue {
+  index: number;
+  code: ActivityNormalizationIssueCode;
+  field?: string;
+  message: string;
+}
+
+export interface RejectedActivity {
+  index: number;
+  record: unknown;
+  issues: ActivityNormalizationIssue[];
+}
+
+export interface ActivityNormalizationResult {
+  activities: Activity[];
+  rejected: RejectedActivity[];
+  warnings: ActivityNormalizationIssue[];
+}
+
+export interface ActivityScopes {
+  sourceActivities: Activity[];
+  analyticsSourceActivities: Activity[];
+  visibleActivities: Activity[];
+  comparisonSourceActivities: Activity[];
+  comparisonWindowDays: number;
+}
+
+export interface V2AnalyticsOptions {
+  referenceDate: Date;
+  comparisonActivities?: Activity[];
+  historyActivities?: Activity[];
+  comparisonWindowDays?: number;
+}
+
 export interface V2Analytics {
+  /** UTC calendar date used as the inclusive end of relative analytics windows. */
+  referenceDate: string;
+  /** Inclusive length of each equal-period comparison window. */
+  comparisonWindowDays: number;
   totalActivities: number;
   activeDays: number;
   dateRange: DateRangeObservation;
   topTopics: Array<{ topic: string; count: number }>;
+  topicIndex: TopicIndexEntry[];
   categoryDistribution: CategoryDistributionItem[];
   activityChange: ActivityChangeResult;
   topicTrends: TopicTrend[];
   peakHours: PeakHourObservation[];
+  observedTimestampCount: number;
   weekdayDistribution: WeekdayDistribution[];
   consistencyStats: ConsistencyStats;
   activityGaps: TopicActivityGap[];
@@ -234,4 +291,7 @@ export interface DemoData {
   skills: Skill[];
 }
 
-export type NavItem = 'overview' | 'activity' | 'interests' | 'skills' | 'timeline' | 'identity';
+export type NavItem = 'overview' | 'activities' | 'patterns' | 'topics' | 'profile';
+
+/** @deprecated Legacy V1 tab identifiers */
+export type LegacyNavItem = 'activity' | 'interests' | 'skills' | 'timeline' | 'identity';

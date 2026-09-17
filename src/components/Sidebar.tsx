@@ -1,7 +1,7 @@
 import { cn } from '../utils/helpers';
 import { NavItem } from '../types';
 import { Button } from './ui/Button';
-import { LayoutDashboard, Activity, Star, TrendingUp, Clock, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, ListOrdered, Clock, Hash, User, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: NavItem;
@@ -13,11 +13,10 @@ interface SidebarProps {
 
 const navItems: { id: NavItem; label: string; icon: React.ReactNode; shortcut: string }[] = [
   { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" />, shortcut: '⌘1' },
-  { id: 'activity', label: 'Activity', icon: <Activity className="w-5 h-5" />, shortcut: '⌘2' },
-  { id: 'interests', label: 'Interests', icon: <Star className="w-5 h-5" />, shortcut: '⌘3' },
-  { id: 'skills', label: 'Skills', icon: <TrendingUp className="w-5 h-5" />, shortcut: '⌘4' },
-  { id: 'timeline', label: 'Timeline', icon: <Clock className="w-5 h-5" />, shortcut: '⌘5' },
-  { id: 'identity', label: 'Identity', icon: <User className="w-5 h-5" />, shortcut: '⌘6' },
+  { id: 'activities', label: 'Activities', icon: <ListOrdered className="w-5 h-5" />, shortcut: '⌘2' },
+  { id: 'patterns', label: 'Patterns', icon: <Clock className="w-5 h-5" />, shortcut: '⌘3' },
+  { id: 'topics', label: 'Topics', icon: <Hash className="w-5 h-5" />, shortcut: '⌘4' },
+  { id: 'profile', label: 'Profile', icon: <User className="w-5 h-5" />, shortcut: '⌘5' },
 ];
 
 export function Sidebar({ activeTab, onTabChange, isCollapsed = false, onToggleCollapse, className }: SidebarProps) {
@@ -25,7 +24,8 @@ export function Sidebar({ activeTab, onTabChange, isCollapsed = false, onToggleC
     <aside
       className={cn(
         'fixed left-0 top-0 z-40 h-full bg-signal-bg border-r border-signal-border transition-all duration-300 flex flex-col',
-        isCollapsed ? 'w-16' : 'w-64'
+        isCollapsed ? 'w-16' : 'w-64',
+        className
       )}
     >
       <div className="flex items-center justify-between h-16 px-4 border-b border-signal-border">
@@ -101,7 +101,7 @@ export function Sidebar({ activeTab, onTabChange, isCollapsed = false, onToggleC
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-signal-fg truncate">medhashree</p>
-              <p className="text-[10px] text-signal-fgSubtle">THE BUILDER</p>
+              <p className="text-[10px] text-signal-fgSubtle font-mono">Activity Record</p>
             </div>
           </div>
         </div>

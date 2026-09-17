@@ -1,10 +1,9 @@
 import { ReactNode, useState } from 'react';
-import { cn } from '../utils/helpers';
 import { Sidebar } from './Sidebar';
 import { FilterBar } from './FilterBar';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { Search, Menu, X, Settings, User, ChevronDown, LogOut } from 'lucide-react';
+import { Search, Menu, Settings, User, ChevronDown, LogOut } from 'lucide-react';
 import { NavItem, Category, DateRange } from '../types';
 import { useMediaQuery } from '../hooks';
 
@@ -49,7 +48,6 @@ export function DashboardLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useMediaQuery('(max-width: 1023px)');
 
-  const effectiveSidebarCollapsed = isMobile ? true : sidebarCollapsed;
   const sidebarWidth = isMobile ? 0 : (sidebarCollapsed ? 64 : 256);
 
   return (
@@ -175,7 +173,10 @@ export function DashboardLayout({
                     </button>
                     <button
                       className="w-full px-4 py-2.5 text-left text-sm text-signal-fg hover:bg-signal-bg flex items-center gap-3 transition-colors"
-                      onClick={() => setShowProfileMenu(false)}
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        onTabChange('profile');
+                      }}
                       role="menuitem"
                     >
                       <User className="w-4 h-4 text-signal-fgMuted" />

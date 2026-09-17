@@ -33,23 +33,29 @@ export function formatDate(dateStr: string, options?: Intl.DateTimeFormatOptions
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+    timeZone: 'UTC',
     ...options,
   });
 }
 
 export function formatMonthYear(dateStr: string): string {
   const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
-export function getRelativeTime(dateStr: string): string {
+export function getRelativeTime(dateStr: string, referenceDate: string | Date): string {
   const date = new Date(dateStr);
-  const now = new Date('2025-09-07');
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const reference = referenceDate instanceof Date ? referenceDate : new Date(referenceDate);
+  if (!Number.isFinite(date.getTime()) || !Number.isFinite(reference.getTime())) return 'Unknown';
+
+  const dateDay = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  const referenceDay = Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth(), reference.getUTCDate());
+  const diffDays = Math.floor((referenceDay - dateDay) / (1000 * 60 * 60 * 24));
 
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
+  if (diffDays === -1) return 'Tomorrow';
+  if (diffDays < 0) return `in ${Math.abs(diffDays)}d`;
   if (diffDays < 7) return `${diffDays}d ago`;
   if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
   if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;

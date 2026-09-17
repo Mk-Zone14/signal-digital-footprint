@@ -1,26 +1,55 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { Input } from '../components/ui/Input';
+import { validateImportedData, type ImportValidationResult } from '../data/importData';
 import { cn } from '../utils/helpers';
 import { Upload, FileJson, CheckCircle, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
 
 interface ImportPageProps {
   onLoadDemo: () => void;
-  onLoadCustom: (data: any) => void;
+  onLoadCustom: (data: unknown) => ImportValidationResult;
   onBack?: () => void;
   isLoading: boolean;
   error: string | null;
 }
 
-export function ImportPage({ onLoadDemo, onLoadCustom, onBack, isLoading, error }: ImportPageProps) {
+export function ImportPage({ onLoadDemo, onLoadCustom, isLoading, error }: ImportPageProps) {
   const [dragActive, setDragActive] = useState(false);
   const [fileName, setFileName] = useState('');
-  const [parsedData, setParsedData] = useState<any>(null);
-  const [previewData, setPreviewData] = useState<any>(null);
+  const [parsedData, setParsedData] = useState<unknown>(null);
+  const [validation, setValidation] = useState<ImportValidationResult | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const processFile = useCallback(async (file: File) => {
+    setLocalError(null);
+    setValidation(null);
+    setFileName('');
+    setParsedData(null);
+
+    if (file.size > 10 * 1024 * 1024) {
+      setLocalError('File too large. Maximum size is 10MB.');
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const parsed: unknown = JSON.parse(text);
+      const result = validateImportedData(parsed);
+
+      setFileName(file.name);
+      setParsedData(parsed);
+      setValidation(result);
+
+      if (!result.ok) {
+        setLocalError(result.errors.map(issue => issue.message).join(' '));
+      }
+    } catch {
+      setParsedData(null);
+      setValidation(null);
+      setLocalError('Failed to parse JSON. Please check the file for syntax errors.');
+    }
+  }, []);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -38,62 +67,29 @@ export function ImportPage({ onLoadDemo, onLoadCustom, onBack, isLoading, error 
     setDragActive(false);
 
     const file = e.dataTransfer.files[0];
-    if (file && file.type === 'application/json') {
+    if (file && (file.type === 'application/json' || file.name.toLowerCase().endsWith('.json'))) {
       processFile(file);
     } else if (file) {
       setLocalError('Please upload a valid JSON file.');
     }
-  }, []);
+  }, [processFile]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       processFile(file);
     }
-  }, []);
-
-  const processFile = async (file: File) => {
-    setLocalError(null);
-    
-    if (file.size > 10 * 1024 * 1024) {
-      setLocalError('File too large. Maximum size is 10MB.');
-      return;
-    }
-
-    try {
-      const text = await file.text();
-      const parsed = JSON.parse(text);
-      
-      if (!parsed || typeof parsed !== 'object') {
-        setLocalError('Invalid JSON format. Expected an object.');
-        return;
-      }
-
-      if (!Array.isArray(parsed.activities)) {
-        setLocalError('Invalid data format. Missing "activities" array.');
-        return;
-      }
-
-      setFileName(file.name);
-      setParsedData(parsed);
-      setPreviewData({
-        activities: parsed.activities?.length || 0,
-        timelineEvents: parsed.timelineEvents?.length || 0,
-        interests: parsed.interests?.length || 0,
-        skills: parsed.skills?.length || 0,
-      });
-    } catch (err) {
-      setLocalError('Failed to parse JSON. Please check the file for syntax errors.');
-    }
-  };
+  }, [processFile]);
 
   const handleLoadCustom = () => {
-    if (parsedData) {
-      onLoadCustom(parsedData);
-    }
+    if (!validation?.ok) return;
+    const result = onLoadCustom(parsedData);
+    if (!result.ok) setLocalError(result.errors.map(issue => issue.message).join(' '));
   };
 
   const displayError = localError || error;
+  const report = validation?.ok ? validation.value.report : validation?.report;
+  const warnings = validation?.ok ? validation.value.warnings : validation?.warnings ?? [];
 
   return (
     <div className="min-h-screen bg-signal-bg flex items-center justify-center px-6 py-12">
@@ -176,7 +172,7 @@ export function ImportPage({ onLoadDemo, onLoadCustom, onBack, isLoading, error 
               </label>
             </div>
 
-            {fileName && !localError && (
+            {fileName && validation?.ok && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -188,19 +184,40 @@ export function ImportPage({ onLoadDemo, onLoadCustom, onBack, isLoading, error 
                     <div>
                       <p className="font-medium text-signal-fg">{fileName}</p>
                       <p className="text-xs text-signal-fgMuted">
-                        {previewData && (
+                        {report && (
                           <>
-                            {previewData.activities} activities · {previewData.timelineEvents} events · {previewData.interests} interests · {previewData.skills} skills
+                            {report.validActivityRecords} valid {report.validActivityRecords === 1 ? 'activity' : 'activities'}
+                            {report.invalidActivityRecords > 0 && ` · ${report.invalidActivityRecords} quarantined`}
                           </>
                         )}
                       </p>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => { setFileName(''); setPreviewData(null); setLocalError(null); fileInputRef.current!.value = ''; }}>
+                  <Button variant="ghost" size="sm" onClick={() => {
+                    setFileName('');
+                    setParsedData(null);
+                    setValidation(null);
+                    setLocalError(null);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }}>
                     Remove
                   </Button>
                 </div>
               </motion.div>
+            )}
+
+            {warnings.length > 0 && (
+              <div className="mt-4 p-4 bg-signal-warning/10 border border-signal-warning/30 rounded-lg text-signal-fgMuted" role="status">
+                <p className="text-sm font-medium text-signal-fg">Import notes</p>
+                <ul className="mt-2 space-y-1 text-sm list-disc pl-5">
+                  {warnings.slice(0, 5).map((warning, index) => (
+                    <li key={`${index}-${warning.code}-${warning.message}`}>{warning.message}</li>
+                  ))}
+                </ul>
+                {warnings.length > 5 && (
+                  <p className="text-xs mt-2">{warnings.length - 5} additional notes are not shown.</p>
+                )}
+              </div>
             )}
 
             {displayError && (
@@ -208,6 +225,7 @@ export function ImportPage({ onLoadDemo, onLoadCustom, onBack, isLoading, error 
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-4 p-4 bg-signal-danger/10 border border-signal-danger/30 rounded-lg flex items-start gap-3 text-signal-danger"
+                role="alert"
               >
                 <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
@@ -220,7 +238,7 @@ export function ImportPage({ onLoadDemo, onLoadCustom, onBack, isLoading, error 
             <Button
               className="w-full mt-4 py-3"
               onClick={handleLoadCustom}
-              disabled={isLoading || !fileName || !!localError}
+              disabled={isLoading || !validation?.ok}
             >
               {isLoading ? (
                 <>
@@ -256,13 +274,9 @@ export function ImportPage({ onLoadDemo, onLoadCustom, onBack, isLoading, error 
       "title": "Built API endpoint",
       "duration": 90,
       "platform": "VS Code",
-      "tags": ["TypeScript", "REST"],
-      "impactScore": 75
+      "tags": ["TypeScript", "REST"]
     }
-  ],
-  "timelineEvents": [...],
-  "interests": [...],
-  "skills": [...]
+  ]
 }`}</pre>
           </motion.div>
         </div>

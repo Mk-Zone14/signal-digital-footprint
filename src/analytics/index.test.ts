@@ -12,20 +12,21 @@ import {
   getConsistencyStats,
   getActivityGaps,
   getTopicCooccurrence,
+  getTopicIndex,
   getV2Analytics,
   normalizeActivity,
+  normalizeActivities,
+  resolveReferenceDate,
+  selectActivityScopes,
+  canonicalizeTag,
   calculateSignalScore,
   calculateArchetype,
   calculatePeakHours,
   calculateDigitalDNA,
   calculateMomentum,
-  calculateSkillGrowth,
-  calculateInterestStrength,
-  getFilteredActivities,
-  REFERENCE_DATE,
 } from './index';
 import { Activity } from '../types';
-import { demoData } from '../data/demoData';
+import { demoData, DEMO_REFERENCE_DATE } from '../data/demoData';
 
 describe('V2 Analytics Foundation & Edge Cases', () => {
   // Edge Case 1: Empty dataset
@@ -61,7 +62,7 @@ describe('V2 Analytics Foundation & Edge Cases', () => {
     });
 
     it('returns no activity status for activity change', () => {
-      const change = getActivityChange(empty, 30, REFERENCE_DATE);
+      const change = getActivityChange(empty, 30, DEMO_REFERENCE_DATE);
       expect(change.currentCount).toBe(0);
       expect(change.previousCount).toBe(0);
       expect(change.percentChange).toBeNull();
@@ -69,13 +70,13 @@ describe('V2 Analytics Foundation & Edge Cases', () => {
     });
 
     it('returns empty topic trends and cooccurrences', () => {
-      expect(getTopicTrends(empty, 30, REFERENCE_DATE)).toEqual([]);
+      expect(getTopicTrends(empty, 30, DEMO_REFERENCE_DATE)).toEqual([]);
       expect(getTopicCooccurrence(empty)).toEqual([]);
-      expect(getActivityGaps(empty, REFERENCE_DATE)).toEqual([]);
+      expect(getActivityGaps(empty, DEMO_REFERENCE_DATE)).toEqual([]);
     });
 
     it('returns 0 for consistency stats', () => {
-      const consistency = getConsistencyStats(empty, REFERENCE_DATE);
+      const consistency = getConsistencyStats(empty, DEMO_REFERENCE_DATE);
       expect(consistency.activeDays).toBe(0);
       expect(consistency.totalDaysInRange).toBe(0);
       expect(consistency.activeDayRatio).toBe(0);
@@ -120,8 +121,7 @@ describe('V2 Analytics Foundation & Edge Cases', () => {
 
     it('observes peak hour at 14', () => {
       const peak = getPeakHours(single);
-      // In local time or UTC (new Date().getHours() on timestamp)
-      const expectedHour = new Date(single[0].timestamp!).getHours();
+      const expectedHour = new Date(single[0].timestamp!).getUTCHours();
       expect(peak[expectedHour].count).toBe(1);
       expect(peak[expectedHour].duration).toBe(90);
     });
@@ -317,7 +317,7 @@ describe('V2 Analytics Foundation & Edge Cases', () => {
 
   // Edge Case 9: Invalid / missing optional fields
   describe('Case 9: Invalid or missing optional fields', () => {
-    it('normalizes malformed object into valid activity', () => {
+    it('rejects an activity with an invalid duration', () => {
       const malformed = {
         title: 123,
         date: '2025-05-10',
@@ -327,12 +327,7 @@ describe('V2 Analytics Foundation & Edge Cases', () => {
       };
 
       const normalized = normalizeActivity(malformed, 99);
-      expect(normalized.id).toBe('act_99');
-      expect(normalized.date).toBe('2025-05-10');
-      expect(normalized.category).toBe('projects'); // fallback
-      expect(normalized.title).toBe('Untitled Activity'); // fallback
-      expect(normalized.duration).toBe(0); // fallback
-      expect(normalized.tags).toEqual([]); // fallback
+      expect(normalized).toBeNull();
     });
   });
 
@@ -363,8 +358,9 @@ describe('V2 Analytics Foundation & Edge Cases', () => {
     };
 
     it('processes custom dataset without crashing and returns correct v2 metrics', () => {
-      const normalized = customJson.activities.map((a, i) => normalizeActivity(a, i));
-      const v2 = getV2Analytics(normalized, new Date('2025-08-10T23:59:59.999Z'));
+      const normalized = normalizeActivities(customJson.activities);
+      expect(normalized.rejected).toEqual([]);
+      const v2 = getV2Analytics(normalized.activities, { referenceDate: new Date('2025-08-10T23:59:59.999Z') });
 
       expect(v2.totalActivities).toBe(2);
       expect(v2.activeDays).toBe(2);
@@ -391,11 +387,178 @@ describe('V2 Analytics Foundation & Edge Cases', () => {
       expect(totalObserved).toBe(demoData.activities.length);
 
       // Check full v2 analytics pipeline on demo data
-      const v2 = getV2Analytics(demoData.activities, REFERENCE_DATE);
+      const v2 = getV2Analytics(demoData.activities, { referenceDate: DEMO_REFERENCE_DATE });
       expect(v2.totalActivities).toBe(demoData.activities.length);
       expect(v2.activeDays).toBeGreaterThan(50);
       expect(v2.topTopics.length).toBeGreaterThan(0);
       expect(v2.consistencyStats.activeDayRatio).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Phase A correctness regressions', () => {
+    const activity = (id: string, date: string, tags: string[] = []): Activity => ({
+      id,
+      date,
+      category: 'coding',
+      title: id,
+      duration: 30,
+      tags,
+    });
+
+    it('quarantines null, invalid dates, invalid timestamps, and non-finite durations', () => {
+      const result = normalizeActivities([
+        null,
+        { date: '2025-02-30', title: 'bad date', duration: 1 },
+        { timestamp: 'not-a-time', title: 'bad time', duration: 1 },
+        { date: '2025-02-01', title: 'bad duration', duration: Infinity },
+      ]);
+
+      expect(result.activities).toEqual([]);
+      expect(result.rejected).toHaveLength(4);
+      expect(result.activities.some(item => item.date === '1970-01-01')).toBe(false);
+    });
+
+    it('keeps date-only activities date-only and excludes them from hourly analytics', () => {
+      const normalized = normalizeActivity({
+        date: '2026-06-10',
+        category: 'learning',
+        title: 'Read docs',
+        duration: 20,
+        tags: ['Docs'],
+      });
+
+      expect(normalized).not.toBeNull();
+      expect(normalized?.timestamp).toBeUndefined();
+      expect(getPeakHours([normalized!]).reduce((sum, bucket) => sum + bucket.count, 0)).toBe(0);
+    });
+
+    it('creates deterministic unique fallback IDs and rejects duplicate supplied IDs', () => {
+      const result = normalizeActivities([
+        { date: '2026-01-01', category: 'coding', title: 'Fallback one', duration: 1 },
+        { id: 'activity-000001', date: '2026-01-02', category: 'coding', title: 'Reserved ID', duration: 1 },
+        { id: 'duplicate', date: '2026-01-03', category: 'coding', title: 'First duplicate', duration: 1 },
+        { id: 'duplicate', date: '2026-01-04', category: 'coding', title: 'Second duplicate', duration: 1 },
+      ]);
+
+      expect(result.activities.map(item => item.id)).toEqual([
+        'activity-000001-2',
+        'activity-000001',
+        'duplicate',
+      ]);
+      expect(result.rejected[0].issues[0].code).toBe('duplicate-id');
+    });
+
+    it('quarantines records that would require invented core fields', () => {
+      const result = normalizeActivities([
+        { date: '2026-01-01', title: 'Missing category', duration: 1 },
+        { date: '2026-01-02', category: 'coding', duration: 1 },
+        { date: '2026-01-03', category: 'coding', title: 'Missing duration' },
+      ]);
+
+      expect(result.activities).toEqual([]);
+      expect(result.rejected.map(item => item.issues[0].code)).toEqual([
+        'invalid-category',
+        'invalid-title',
+        'invalid-duration',
+      ]);
+    });
+
+    it('resolves imported historical data against its latest valid activity date', () => {
+      const imported = [activity('a', '2026-04-01'), activity('b', '2026-05-20')];
+      const reference = resolveReferenceDate(imported);
+      expect(reference?.toISOString()).toBe('2026-05-20T23:59:59.999Z');
+      expect(getActivityChange(imported, 30, reference!).currentCount).toBe(1);
+    });
+
+    it('retains the previous period when a 30-day display window is selected', () => {
+      const source = [
+        activity('previous', '2026-05-15'),
+        activity('current-1', '2026-06-01'),
+        activity('current-2', '2026-06-30'),
+      ];
+      const referenceDate = new Date('2026-06-30T23:59:59.999Z');
+      const scopes = selectActivityScopes(source, '30d', [], referenceDate);
+      const analytics = getV2Analytics(scopes.visibleActivities, {
+        referenceDate,
+        comparisonActivities: scopes.comparisonSourceActivities,
+        historyActivities: scopes.analyticsSourceActivities,
+        comparisonWindowDays: scopes.comparisonWindowDays,
+      });
+
+      expect(scopes.visibleActivities.map(item => item.id)).toEqual(['current-1', 'current-2']);
+      expect(analytics.activityChange.currentCount).toBe(2);
+      expect(analytics.activityChange.previousCount).toBe(1);
+      expect(analytics.comparisonWindowDays).toBe(30);
+    });
+
+    it('keeps full-history topic recency while limiting equal-period comparisons', () => {
+      const oldTopic = activity('old-topic', '2026-01-01', ['COBOL']);
+      const currentTopic = activity('current-topic', '2026-06-30', ['TypeScript']);
+      const referenceDate = new Date('2026-06-30T23:59:59.999Z');
+      const scopes = selectActivityScopes([oldTopic, currentTopic], '30d', [], referenceDate);
+      const analytics = getV2Analytics(scopes.visibleActivities, {
+        referenceDate,
+        comparisonActivities: scopes.comparisonSourceActivities,
+        historyActivities: scopes.analyticsSourceActivities,
+        comparisonWindowDays: scopes.comparisonWindowDays,
+      });
+
+      expect(scopes.comparisonSourceActivities).not.toContain(oldTopic);
+      expect(analytics.activityGaps.find(gap => gap.topic === 'COBOL')?.lastActivityDate).toBe('2026-01-01');
+    });
+
+    it('builds a complete topic index independently of the top-ten summary', () => {
+      const frequent = Array.from({ length: 10 }, (_, index) => [
+        activity(`frequent-${index}-a`, '2026-01-01', [`Topic ${index}`]),
+        activity(`frequent-${index}-b`, '2026-01-02', [`Topic ${index}`]),
+      ]).flat();
+      const activities = [...frequent, activity('docker', '2026-01-03', ['Docker'])];
+
+      expect(getTopTopics(activities)).toHaveLength(10);
+      expect(getTopTopics(activities).some(item => item.topic === 'Docker')).toBe(false);
+      expect(getTopicIndex(activities).find(item => item.topic === 'Docker')?.count).toBe(1);
+    });
+
+    it('canonicalizes and deduplicates tags while keeping delimiter characters safe', () => {
+      const activities = [
+        activity('one', '2026-01-01', ['React', ' react ', 'REACT', 'A|B', 'C']),
+        activity('two', '2026-01-02', ['react', 'A|B', 'C']),
+      ];
+
+      expect(canonicalizeTag('  ReAcT  ')).toBe('react');
+      expect(getTopicIndex(activities).find(item => canonicalizeTag(item.topic) === 'react')?.count).toBe(2);
+      const delimiterEdge = getTopicCooccurrence(activities).find(edge =>
+        [edge.source, edge.target].includes('A|B') && [edge.source, edge.target].includes('C')
+      );
+      expect(delimiterEdge?.count).toBe(2);
+    });
+
+    it('uses literal calendar dates and keeps active weeks within intersecting weeks', () => {
+      const sundayAndMonday = [activity('sun', '2025-09-07'), activity('mon', '2025-09-08')];
+      const range = getDateRange(sundayAndMonday);
+      const stats = getConsistencyStats(sundayAndMonday, new Date('2025-09-08T23:59:59.999Z'));
+      const weekdays = getWeekdayDistribution(sundayAndMonday);
+
+      expect(range.totalDays).toBe(2);
+      expect(weekdays[0].count).toBe(1);
+      expect(weekdays[1].count).toBe(1);
+      expect(stats.activeWeeks).toBe(2);
+      expect(stats.totalWeeks).toBe(2);
+      expect(stats.activeWeeks).toBeLessThanOrEqual(stats.totalWeeks);
+    });
+
+    it('groups timezone-bearing timestamps by their UTC calendar day and hour', () => {
+      const normalized = normalizeActivity({
+        timestamp: '2025-03-09T23:30:00-05:00',
+        date: '2025-03-09',
+        category: 'coding',
+        title: 'DST boundary',
+        duration: 10,
+      });
+
+      expect(normalized?.date).toBe('2025-03-10');
+      expect(getPeakHours([normalized!])[4].count).toBe(1);
+      expect(getWeekdayDistribution([normalized!])[1].count).toBe(1);
     });
   });
 });
