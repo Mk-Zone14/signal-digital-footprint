@@ -6,12 +6,17 @@ export interface Activity {
   date: string;
   category: Category;
   title: string;
-  /** Duration in minutes */
-  duration: number;
+  /** Duration in minutes when observed or supplied */
+  duration?: number;
   platform?: string;
   tags: string[];
   description?: string;
   url?: string;
+  source?: ActivitySource;
+  connectionId?: string;
+  externalId?: string;
+  type?: string;
+  project?: string;
   metadata?: Record<string, unknown>;
   /** @deprecated Legacy V1 impact score - arbitrary heuristic retained only for backward compatibility */
   impactScore?: number;
@@ -26,6 +31,57 @@ export type Category =
   | 'learning'
   | 'social'
   | 'projects';
+
+export type ActivitySource =
+  | 'demo'
+  | 'manual'
+  | 'csv'
+  | 'json'
+  | 'github'
+  | 'google_calendar'
+  | 'linear'
+  | 'notion'
+  | 'toggl'
+  | 'browser_extension';
+
+export type PersistedActivitySource = Exclude<ActivitySource, 'demo'>;
+
+export type ConnectionProvider = Extract<
+  ActivitySource,
+  'github' | 'google_calendar' | 'linear' | 'notion' | 'toggl' | 'browser_extension'
+>;
+
+export type ConnectionStatus =
+  | 'not_connected'
+  | 'connecting'
+  | 'connected'
+  | 'syncing'
+  | 'error'
+  | 'disconnected';
+
+export interface Connection {
+  id: string;
+  provider: ConnectionProvider;
+  providerAccountId?: string;
+  providerAccountName?: string;
+  status: ConnectionStatus;
+  connectedAt: string;
+  lastSyncedAt?: string;
+  syncError?: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface ManualActivityInput {
+  title: string;
+  date: string;
+  observedTime?: string;
+  category: Category;
+  topics: string[];
+  description?: string;
+  durationMinutes?: number;
+  url?: string;
+  project?: string;
+}
 
 export interface TimelineEvent {
   id: string;
@@ -291,7 +347,7 @@ export interface DemoData {
   skills: Skill[];
 }
 
-export type NavItem = 'overview' | 'activities' | 'patterns' | 'topics' | 'profile';
+export type NavItem = 'overview' | 'activities' | 'patterns' | 'topics' | 'profile' | 'sources';
 
 /** @deprecated Legacy V1 tab identifiers */
 export type LegacyNavItem = 'activity' | 'interests' | 'skills' | 'timeline' | 'identity';

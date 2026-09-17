@@ -29,6 +29,8 @@ interface DashboardLayoutProps {
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
   onSignOut: () => void;
+  displayName: string;
+  mode: 'demo' | 'account';
 }
 
 export function DashboardLayout({
@@ -43,6 +45,8 @@ export function DashboardLayout({
   searchQuery,
   onSearchQueryChange,
   onSignOut,
+  displayName,
+  mode,
 }: DashboardLayoutProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -59,6 +63,8 @@ export function DashboardLayout({
           onTabChange={onTabChange}
           isCollapsed={sidebarCollapsed}
           onToggleCollapse={onToggleSidebar}
+          displayName={displayName}
+          mode={mode}
         />
       )}
 
@@ -79,6 +85,8 @@ export function DashboardLayout({
               }}
               isCollapsed={false}
               onToggleCollapse={() => setMobileMenuOpen(false)}
+              displayName={displayName}
+              mode={mode}
             />
           </div>
         </>
@@ -155,7 +163,7 @@ export function DashboardLayout({
                 <div className="w-8 h-8 rounded-full bg-signal-accent/20 flex items-center justify-center">
                   <User className="w-4 h-4 text-signal-accent" />
                 </div>
-                <span className="hidden sm:block font-medium text-signal-fg text-sm">medhashree</span>
+                <span className="hidden sm:block font-medium text-signal-fg text-sm">{displayName}</span>
                 <ChevronDown className="w-4 h-4 text-signal-fgMuted hidden sm:block" />
               </Button>
 
@@ -192,7 +200,7 @@ export function DashboardLayout({
                       role="menuitem"
                     >
                       <LogOut className="w-4 h-4" />
-                      Sign out
+                      {mode === 'account' ? 'Sign out' : 'Exit demo'}
                     </button>
                   </div>
                 </>

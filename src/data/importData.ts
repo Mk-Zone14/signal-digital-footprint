@@ -171,7 +171,7 @@ export function validateImportedData(payload: unknown): ImportValidationResult {
     ok: true,
     value: {
       data: {
-        activities: normalization.activities,
+        activities: normalization.activities.map(activity => ({ ...activity, source: 'json' as const })),
         timelineEvents: [],
         interests: [],
         skills: [],

@@ -3,22 +3,23 @@ import { motion } from 'framer-motion';
 import { Button } from '../components/ui/Button';
 import { validateImportedData, type ImportValidationResult } from '../data/importData';
 import { cn } from '../utils/helpers';
-import { Upload, FileJson, CheckCircle, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { Upload, FileJson, CheckCircle, AlertCircle, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
 
 interface ImportPageProps {
   onLoadDemo: () => void;
-  onLoadCustom: (data: unknown) => ImportValidationResult;
+  onLoadCustom: (data: unknown) => ImportValidationResult | Promise<ImportValidationResult>;
   onBack?: () => void;
   isLoading: boolean;
   error: string | null;
 }
 
-export function ImportPage({ onLoadDemo, onLoadCustom, isLoading, error }: ImportPageProps) {
+export function ImportPage({ onLoadDemo, onLoadCustom, onBack, isLoading, error }: ImportPageProps) {
   const [dragActive, setDragActive] = useState(false);
   const [fileName, setFileName] = useState('');
   const [parsedData, setParsedData] = useState<unknown>(null);
   const [validation, setValidation] = useState<ImportValidationResult | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [isPersisting, setIsPersisting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const processFile = useCallback(async (file: File) => {
@@ -81,10 +82,15 @@ export function ImportPage({ onLoadDemo, onLoadCustom, isLoading, error }: Impor
     }
   }, [processFile]);
 
-  const handleLoadCustom = () => {
+  const handleLoadCustom = async () => {
     if (!validation?.ok) return;
-    const result = onLoadCustom(parsedData);
-    if (!result.ok) setLocalError(result.errors.map(issue => issue.message).join(' '));
+    setIsPersisting(true);
+    try {
+      const result = await onLoadCustom(parsedData);
+      if (!result.ok) setLocalError(result.errors.map(issue => issue.message).join(' '));
+    } finally {
+      setIsPersisting(false);
+    }
   };
 
   const displayError = localError || error;
@@ -94,6 +100,11 @@ export function ImportPage({ onLoadDemo, onLoadCustom, isLoading, error }: Impor
   return (
     <div className="min-h-screen bg-signal-bg flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-2xl">
+        {onBack && (
+          <button onClick={onBack} className="mb-6 text-sm text-signal-fgMuted hover:text-signal-fg flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4" /> Back
+          </button>
+        )}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -103,8 +114,8 @@ export function ImportPage({ onLoadDemo, onLoadCustom, isLoading, error }: Impor
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-signal-accent/10 flex items-center justify-center">
             <Upload className="w-8 h-8 text-signal-accent" />
           </div>
-          <h1 className="font-display text-3xl font-bold text-signal-fg mb-2">Load Your Data</h1>
-          <p className="text-signal-fgMuted">Import a JSON file or explore with our demo dataset</p>
+          <h1 className="font-display text-3xl font-bold text-signal-fg mb-2">Advanced JSON Import</h1>
+          <p className="text-signal-fgMuted">Validate a Signal JSON export or explore the demo dataset</p>
         </motion.div>
 
         <div className="space-y-6">
@@ -238,9 +249,9 @@ export function ImportPage({ onLoadDemo, onLoadCustom, isLoading, error }: Impor
             <Button
               className="w-full mt-4 py-3"
               onClick={handleLoadCustom}
-              disabled={isLoading || !validation?.ok}
+              disabled={isLoading || isPersisting || !validation?.ok}
             >
-              {isLoading ? (
+              {isLoading || isPersisting ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   Loading...

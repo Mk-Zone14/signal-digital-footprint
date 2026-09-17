@@ -219,6 +219,7 @@ function generateActivities(): Activity[] {
 
       activities.push({
         id: `act_${id++}`,
+        source: 'demo',
         timestamp,
         date: dateStr,
         category: selectedCategory,

@@ -304,7 +304,7 @@ export function TopicsPage({
                           <Calendar className="w-3 h-3" />
                           {formattedDate}
                         </span>
-                        {activity.duration > 0 && (
+                        {typeof activity.duration === 'number' && activity.duration > 0 && (
                           <span className="text-xs text-signal-fgSubtle font-mono flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {formatDuration(activity.duration)}

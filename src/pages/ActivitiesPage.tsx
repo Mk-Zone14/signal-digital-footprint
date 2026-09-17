@@ -4,6 +4,7 @@ import { Input } from '../components/ui/Input';
 import { Activity, Category, DateRange } from '../types';
 import { categoryColors, CATEGORIES } from '../analytics';
 import { formatDuration, formatDate, cn } from '../utils/helpers';
+import { safeActivityUrl } from '../platform/activityMapping';
 import { Search, X, ExternalLink, Calendar, Clock, Filter, ArrowUpDown, Tag } from 'lucide-react';
 
 interface ActivitiesPageProps {
@@ -264,6 +265,7 @@ export function ActivitiesPage({
               ? formatDate(activity.timestamp)
               : activity.date;
             const isExpanded = expandedActivityId === activity.id;
+            const safeUrl = safeActivityUrl(activity.url);
 
             return (
               <div
@@ -289,7 +291,7 @@ export function ActivitiesPage({
                         <Calendar className="w-3 h-3" />
                         {formattedDate}
                       </span>
-                      {activity.duration > 0 && (
+                      {typeof activity.duration === 'number' && activity.duration > 0 && (
                         <span className="text-xs text-signal-fgSubtle font-mono flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {formatDuration(activity.duration)}
@@ -298,6 +300,11 @@ export function ActivitiesPage({
                       {activity.platform && (
                         <span className="text-[11px] text-signal-fgMuted bg-signal-bg px-1.5 py-0.5 rounded border border-signal-border">
                           {activity.platform}
+                        </span>
+                      )}
+                      {activity.source && (
+                        <span className="px-2 py-0.5 rounded bg-signal-bgElevated text-signal-fgSubtle capitalize">
+                          {activity.source.replace('_', ' ')}
                         </span>
                       )}
                     </div>
@@ -331,10 +338,10 @@ export function ActivitiesPage({
                     )}
                   </div>
 
-                  {activity.url && (
+                  {safeUrl && (
                     <div className="flex-shrink-0 self-start sm:self-center">
                       <a
-                        href={activity.url}
+                        href={safeUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={e => e.stopPropagation()}
@@ -351,9 +358,9 @@ export function ActivitiesPage({
                 {isExpanded && activity.description && (
                   <div className="mt-3 pt-3 border-t border-signal-border/50 text-xs text-signal-fgMuted space-y-2">
                     <p className="leading-relaxed">{activity.description}</p>
-                    {activity.url && (
+                    {safeUrl && (
                       <p className="text-[11px] font-mono truncate text-signal-fgSubtle">
-                        URL: <a href={activity.url} target="_blank" rel="noopener noreferrer" className="text-signal-accent hover:underline">{activity.url}</a>
+                        URL: <a href={safeUrl} target="_blank" rel="noopener noreferrer" className="text-signal-accent hover:underline">{safeUrl}</a>
                       </p>
                     )}
                   </div>

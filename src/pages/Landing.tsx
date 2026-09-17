@@ -48,7 +48,7 @@ const stats = [
   { label: 'Skills Tracked', value: '8' },
 ];
 
-export function Landing({ onExploreDemo, onImportData }: { onExploreDemo: () => void; onImportData: () => void }) {
+export function Landing({ onExploreDemo, onImportData, onSignIn }: { onExploreDemo: () => void; onImportData: () => void; onSignIn: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);
 
@@ -183,7 +183,8 @@ export function Landing({ onExploreDemo, onImportData }: { onExploreDemo: () => 
           <span className="font-display font-bold text-xl text-signal-fg">SIGNAL</span>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="ghost" onClick={onImportData}>Import Data</Button>
+          <Button variant="ghost" onClick={onSignIn}>Sign in</Button>
+          <Button variant="ghost" onClick={onImportData}>Advanced JSON import</Button>
           <Button onClick={onExploreDemo}>
             Explore Demo
             <ArrowRight className="w-4 h-4 ml-1" />
@@ -226,7 +227,7 @@ export function Landing({ onExploreDemo, onImportData }: { onExploreDemo: () => 
             </Button>
             <Button variant="secondary" size="lg" onClick={onImportData} className="w-full sm:w-auto">
               <Download className="w-4 h-4 mr-2" />
-              Import Data
+              Advanced JSON import
             </Button>
           </motion.div>
         </div>

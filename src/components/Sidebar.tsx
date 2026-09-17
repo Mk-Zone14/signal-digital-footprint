@@ -1,7 +1,7 @@
 import { cn } from '../utils/helpers';
 import { NavItem } from '../types';
 import { Button } from './ui/Button';
-import { LayoutDashboard, ListOrdered, Clock, Hash, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, ListOrdered, Clock, Hash, User, ChevronLeft, ChevronRight, Database } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: NavItem;
@@ -9,6 +9,8 @@ interface SidebarProps {
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   className?: string;
+  displayName: string;
+  mode: 'demo' | 'account';
 }
 
 const navItems: { id: NavItem; label: string; icon: React.ReactNode; shortcut: string }[] = [
@@ -17,9 +19,10 @@ const navItems: { id: NavItem; label: string; icon: React.ReactNode; shortcut: s
   { id: 'patterns', label: 'Patterns', icon: <Clock className="w-5 h-5" />, shortcut: '⌘3' },
   { id: 'topics', label: 'Topics', icon: <Hash className="w-5 h-5" />, shortcut: '⌘4' },
   { id: 'profile', label: 'Profile', icon: <User className="w-5 h-5" />, shortcut: '⌘5' },
+  { id: 'sources', label: 'Sources', icon: <Database className="w-5 h-5" />, shortcut: '⌘6' },
 ];
 
-export function Sidebar({ activeTab, onTabChange, isCollapsed = false, onToggleCollapse, className }: SidebarProps) {
+export function Sidebar({ activeTab, onTabChange, isCollapsed = false, onToggleCollapse, className, displayName, mode }: SidebarProps) {
   return (
     <aside
       className={cn(
@@ -100,8 +103,8 @@ export function Sidebar({ activeTab, onTabChange, isCollapsed = false, onToggleC
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-signal-fg truncate">medhashree</p>
-              <p className="text-[10px] text-signal-fgSubtle font-mono">Activity Record</p>
+              <p className="text-xs font-medium text-signal-fg truncate">{displayName}</p>
+              <p className="text-[10px] text-signal-fgSubtle font-mono">{mode === 'account' ? 'Account' : 'Demo mode'}</p>
             </div>
           </div>
         </div>

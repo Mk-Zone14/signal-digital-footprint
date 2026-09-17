@@ -135,7 +135,7 @@ export function OverviewPage({
                         </div>
                         <div className="flex items-center gap-3 text-signal-fgMuted font-mono">
                           <span>{item.count} acts ({item.percentage}%)</span>
-                          {item.duration > 0 && (
+                          {typeof item.duration === 'number' && item.duration > 0 && (
                             <span className="text-signal-fgSubtle">
                               • {formatDuration(item.duration)}
                             </span>
@@ -200,7 +200,7 @@ export function OverviewPage({
                         <span className="text-[11px] text-signal-fgSubtle font-mono">
                           {formattedDate}
                         </span>
-                        {activity.duration > 0 && (
+                        {typeof activity.duration === 'number' && activity.duration > 0 && (
                           <span className="text-[11px] text-signal-fgSubtle font-mono">
                             • {formatDuration(activity.duration)}
                           </span>

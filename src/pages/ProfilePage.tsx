@@ -15,7 +15,7 @@ interface ProfilePageProps {
 export function ProfilePage({
   activities,
   v2Analytics,
-  username = 'medhashree',
+  username = 'Signal user',
 }: ProfilePageProps) {
   const identityCardRef = useRef<IdentityCardHandle>(null);
 

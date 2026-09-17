@@ -6,6 +6,7 @@ import { ActivitiesPage } from './ActivitiesPage';
 import { PatternsPage } from './PatternsPage';
 import { TopicsPage } from './TopicsPage';
 import { ProfilePage } from './ProfilePage';
+import { SourcesPage } from './SourcesPage';
 import { Search } from '../components/Search';
 import {
   NavItem,
@@ -18,6 +19,8 @@ import {
   FilterState,
   SearchResult,
   V2Analytics,
+  Connection,
+  ManualActivityInput,
 } from '../types';
 
 const tabConfigs: Record<NavItem, { title: string; description: string }> = {
@@ -40,6 +43,10 @@ const tabConfigs: Record<NavItem, { title: string; description: string }> = {
   profile: {
     title: 'Profile',
     description: 'What does my activity history look like as a concise, shareable record?',
+  },
+  sources: {
+    title: 'Sources',
+    description: 'Manage how activities enter Signal',
   },
 };
 
@@ -88,6 +95,14 @@ interface DashboardProps {
   onToggleSidebar: () => void;
   onSignOut: () => void;
   isLoading: boolean;
+  mode: 'demo' | 'account';
+  displayName: string;
+  connections: Connection[];
+  writeError?: string | null;
+  onCreateManual: (input: ManualActivityInput) => Promise<unknown>;
+  onOpenImport: () => void;
+  onRequestSignIn: () => void;
+  accountSessionAvailable?: boolean;
 }
 
 export function Dashboard({
@@ -106,6 +121,14 @@ export function Dashboard({
   onToggleSidebar,
   onSignOut,
   isLoading,
+  mode,
+  displayName,
+  connections,
+  writeError,
+  onCreateManual,
+  onOpenImport,
+  onRequestSignIn,
+  accountSessionAvailable,
 }: DashboardProps) {
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
 
@@ -126,6 +149,7 @@ export function Dashboard({
       case 'patterns':
       case 'topics':
       case 'profile':
+      case 'sources':
         return activeTab;
       default:
         return 'overview';
@@ -247,7 +271,20 @@ export function Dashboard({
           <ProfilePage
             activities={visibleActivities}
             v2Analytics={safeV2Analytics}
-            username="medhashree"
+            username={displayName}
+          />
+        );
+
+      case 'sources':
+        return (
+          <SourcesPage
+            mode={mode}
+            connections={connections}
+            writeError={writeError}
+            onCreateManual={onCreateManual}
+            onOpenImport={onOpenImport}
+            onRequestSignIn={onRequestSignIn}
+            accountSessionAvailable={accountSessionAvailable}
           />
         );
 
@@ -269,6 +306,8 @@ export function Dashboard({
       searchQuery={filters.searchQuery}
       onSearchQueryChange={onSearchQueryChange}
       onSignOut={onSignOut}
+      displayName={displayName}
+      mode={mode}
     >
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Page Header */}
