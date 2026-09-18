@@ -136,7 +136,7 @@ const activityTitles: Record<Category, string[]> = {
 };
 
 /**
- * Seeded PRNG (mulberry32) — deterministic pseudo-random number generator.
+ * Seeded PRNG (mulberry32), a deterministic pseudo-random number generator.
  * Returns a function that produces numbers in [0, 1) on each call.
  */
 function createSeededRNG(seed: number): () => number {
@@ -338,7 +338,7 @@ function generateTimelineEvents(_activities: Activity[]): TimelineEvent[] {
   return events;
 }
 
-/** Deterministic interest generation — no Math.random() */
+/** Deterministic interest generation with no Math.random() */
 function generateInterests(activities: Activity[]): Interest[] {
   const rng = createSeededRNG(7);
 

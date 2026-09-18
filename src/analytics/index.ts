@@ -1077,7 +1077,7 @@ export function getV2Analytics(
  * Signal V2 intentionally does NOT define a universal Signal Score.
  * A composite score collapses independently valid observations (active days,
  * category breadth, recent activity change) into a single number using
- * arbitrary weighting — there is no defensible reason to do this.
+ * arbitrary weighting; there is no defensible reason to do this.
  *
  * This function exists ONLY to preserve compile compatibility with existing
  * UI components that consume SignalScore. All returned values are zeroed:
@@ -1099,7 +1099,7 @@ export function calculateSignalScore(_activities: Activity[]): SignalScore {
  *
  * The `confidence` field in the returned object is a LEGACY COMPATIBILITY FIELD.
  * It stores the observed activity allocation ratio for the top category.
- * It is NOT a statistical confidence measure — it does not represent:
+ * It is NOT a statistical confidence measure. It does not represent:
  *   - likelihood of correct classification
  *   - model certainty
  *   - any validated metric

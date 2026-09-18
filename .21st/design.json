@@ -1,0 +1,164 @@
+{
+  "version": 1,
+  "project": {
+    "name": "signal",
+    "productType": null,
+    "stack": [
+      "react",
+      "tailwind-v4",
+      "vite"
+    ]
+  },
+  "sources": {
+    "tokens": [
+      "src/index.css"
+    ],
+    "components": [
+      "src/components/ui"
+    ],
+    "assets": [
+      "src/assets"
+    ],
+    "instructions": []
+  },
+  "design": {
+    "colorMode": "dark",
+    "colors": {
+      "--color-signal-bg": {
+        "value": "#0A0B0D",
+        "source": "src/index.css"
+      },
+      "--color-signal-bgElevated": {
+        "value": "#111317",
+        "source": "src/index.css"
+      },
+      "--color-signal-border": {
+        "value": "#1E2128",
+        "source": "src/index.css"
+      },
+      "--color-signal-borderHover": {
+        "value": "#2A2E38",
+        "source": "src/index.css"
+      },
+      "--color-signal-fg": {
+        "value": "#F0F1F4",
+        "source": "src/index.css"
+      },
+      "--color-signal-fgMuted": {
+        "value": "#8B8F9A",
+        "source": "src/index.css"
+      },
+      "--color-signal-fgSubtle": {
+        "value": "#5A5E6A",
+        "source": "src/index.css"
+      },
+      "--color-signal-accent": {
+        "value": "#00D4AA",
+        "source": "src/index.css"
+      },
+      "--color-signal-accentHover": {
+        "value": "#00EBBF",
+        "source": "src/index.css"
+      },
+      "--color-signal-accentMuted": {
+        "value": "#00D4AA1A",
+        "source": "src/index.css"
+      },
+      "--color-signal-warning": {
+        "value": "#F5A623",
+        "source": "src/index.css"
+      },
+      "--color-signal-danger": {
+        "value": "#FF4757",
+        "source": "src/index.css"
+      },
+      "--shadow-glow-accent": {
+        "value": "0 0 24px -4px rgba(0, 212, 170, 0.3)",
+        "source": "src/index.css"
+      }
+    },
+    "typography": {
+      "--font-family-mono": {
+        "value": "'JetBrains Mono', 'Fira Code', Consolas, monospace",
+        "source": "src/index.css"
+      },
+      "--font-family-sans": {
+        "value": "'Inter', system-ui, -apple-system, sans-serif",
+        "source": "src/index.css"
+      },
+      "--font-family-display": {
+        "value": "'Space Grotesk', 'Inter', system-ui, sans-serif",
+        "source": "src/index.css"
+      }
+    },
+    "spacing": {},
+    "radius": {},
+    "shadows": {
+      "--shadow-elevated": {
+        "value": "0 4px 24px -4px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.03)",
+        "source": "src/index.css"
+      },
+      "--shadow-elevated-hover": {
+        "value": "0 8px 32px -8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)",
+        "source": "src/index.css"
+      }
+    },
+    "motion": {},
+    "density": "unknown"
+  },
+  "components": {
+    "installed": [
+      "Badge",
+      "Button",
+      "Card",
+      "Input",
+      "Tooltip"
+    ],
+    "preferredPrimitives": [],
+    "patterns": []
+  },
+  "constraints": {
+    "must": [
+      "Use real Signal analytics and truthful source states",
+      "Preserve reduced-motion and responsive behavior",
+      "Keep the landing visually connected to the dashboard"
+    ],
+    "avoid": [
+      "Legacy V1 scores, archetypes, confidence, or skill claims",
+      "Generic SaaS card grids and purple-blue AI gradients",
+      "Unlabeled future integration claims"
+    ]
+  },
+  "decisions": [
+    "Use near-black editorial surfaces with electric acid green as the sole brand accent",
+    "Use scroll motion to communicate source aggregation, evidence, and pattern discovery",
+    "Treat future product concepts as explicitly labeled previews"
+  ],
+  "evidence": [
+    {
+      "fact": "components.installed",
+      "source": "src/components/ui"
+    },
+    {
+      "fact": "design.colorMode:light",
+      "source": "src/index.css"
+    },
+    {
+      "fact": "design.tokens",
+      "source": "src/index.css"
+    },
+    {
+      "fact": "project.stack:react",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:tailwind-v4",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:vite",
+      "source": "package.json"
+    }
+  ],
+  "generatedAt": "2026-09-18T04:20:32.063Z"
+}

@@ -158,7 +158,7 @@ export function PatternsPage({
                   >
                     {/* Tooltip on hover */}
                     <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity bg-signal-bgElevated border border-signal-border px-2 py-1 rounded text-[10px] font-mono whitespace-nowrap pointer-events-none z-10 text-signal-fg shadow-lg">
-                      {hourData.hour}:00 UTC — {hourData.count} acts
+                      {hourData.hour}:00 UTC · {hourData.count} acts
                       {hourData.duration > 0 && ` (${formatDuration(hourData.duration)})`}
                     </div>
 
