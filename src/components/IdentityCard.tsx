@@ -65,18 +65,14 @@ export const IdentityCard = forwardRef<IdentityCardHandle, IdentityCardProps>(
       <div
         ref={cardRef}
         className={cn(
-          'relative max-w-md mx-auto p-6 bg-signal-bg border border-signal-border rounded-2xl shadow-[0_0_60px_-10px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.02)] overflow-hidden',
+          'relative max-w-md mx-auto p-6 bg-signal-bg border border-signal-border rounded-[12px] shadow-elevated overflow-hidden',
           className,
           isExporting && 'rounded-none border-0 shadow-none'
         )}
-        style={{ background: 'linear-gradient(180deg, #0A0B0D 0%, #0D1015 100%)' }}
+        style={{ background: 'linear-gradient(180deg, #0c100e 0%, #070a08 100%)' }}
       >
         <div
-          className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(0,212,170,0.08)_0%,_transparent_60%)]"
-          style={{ pointerEvents: 'none' }}
-        />
-        <div
-          className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(0,212,170,0.03)_0%,_transparent_50%)]"
+          className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(184,255,61,0.06)_0%,_transparent_55%)]"
           style={{ pointerEvents: 'none' }}
         />
 
@@ -151,11 +147,11 @@ export const IdentityCard = forwardRef<IdentityCardHandle, IdentityCardProps>(
         {/* Category Breakdown */}
         <div className="relative mb-6">
           <p className="text-[10px] text-signal-fgSubtle uppercase tracking-widest font-mono font-semibold mb-2.5">
-            CATEGORY ALLOCATION
+            CATEGORY DISTRIBUTION
           </p>
           <div className="space-y-2">
             {topCategories.map(cat => {
-              const color = categoryColors[cat.category] || '#00D4AA';
+              const color = categoryColors[cat.category] || '#b8ff3d';
               return (
                 <div key={cat.category} className="space-y-1">
                   <div className="flex justify-between text-xs">
@@ -237,10 +233,10 @@ export const IdentityCard = forwardRef<IdentityCardHandle, IdentityCardProps>(
         <div className="relative pt-4 border-t border-signal-border/50 flex items-center justify-between">
           <div>
             <p className="font-display text-sm font-bold text-signal-fg">{username}</p>
-            <p className="text-[10px] text-signal-fgMuted">Evidence-based Activity Record</p>
+            <p className="text-[10px] text-signal-fgMuted">Personal activity record</p>
           </div>
           <Badge variant="accent" size="sm" className="font-mono text-[10px]">
-            VERIFIED
+            FROM ACTIVITY HISTORY
           </Badge>
         </div>
       </div>

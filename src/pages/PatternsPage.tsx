@@ -52,7 +52,7 @@ export function PatternsPage({
         </div>
         <h3 className="text-lg font-semibold text-signal-fg mb-1">Not enough activity data to show patterns</h3>
         <p className="text-sm text-signal-fgMuted">
-          Record or import more activities to discover temporal patterns and consistency observations.
+          Record or import more activities to see patterns across time.
         </p>
       </div>
     );
@@ -233,7 +233,7 @@ export function PatternsPage({
             {comparisonWindowDays}-Day Period Comparison
           </h3>
           <p className="text-xs text-signal-fgMuted mb-6">
-            Exact volume comparison between the recent {comparisonWindowDays}-day window and prior {comparisonWindowDays} days
+            Compare the recent {comparisonWindowDays}-day window with the previous {comparisonWindowDays} days
           </p>
 
           <div className="space-y-4">

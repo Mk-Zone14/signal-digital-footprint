@@ -110,7 +110,7 @@ function SourcesSection({ onImportData }: { onImportData: () => void }) {
         <div className="source-scatter">
           {sourceCards.map((source, index) => {
             const Icon = source.icon;
-            const card = <motion.div className={`source-card source-card--${index + 1}`} initial={reduceMotion ? false : { opacity: 0, y: 70, rotate: index % 2 ? 5 : -5 }} whileInView={reduceMotion ? undefined : { opacity: 1, y: 0, rotate: index % 3 === 0 ? -1.5 : index % 3 === 1 ? 1.5 : 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.75, delay: index * 0.06, ease }}><div className="source-card__top"><Icon aria-hidden="true" /></div><div><strong>{source.label}</strong><small>{source.state}</small></div></motion.div>;
+            const card = <motion.div className={`source-card source-card--${index + 1}`} initial={reduceMotion ? false : { opacity: 0, y: 36 }} whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.25 }} transition={{ duration: 0.62, delay: index * 0.05, ease }}><div className="source-card__top"><Icon aria-hidden="true" /></div><div><strong>{source.label}</strong><small>{source.state}</small></div></motion.div>;
             return source.label === 'CSV + JSON' ? <button className="source-card-button" onClick={onImportData} key={source.label} aria-label="Open CSV and JSON import">{card}</button> : <div key={source.label}>{card}</div>;
           })}
         </div>

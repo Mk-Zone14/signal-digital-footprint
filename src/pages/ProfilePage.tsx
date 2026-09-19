@@ -59,7 +59,7 @@ export function ProfilePage({
             Activity Record &amp; Profile
           </h2>
           <p className="text-xs text-signal-fgMuted mt-0.5">
-            Concise, verifiable summary of your recorded digital activity history
+            A concise, shareable summary of your recorded activity history
           </p>
         </div>
 
@@ -78,9 +78,9 @@ export function ProfilePage({
         {/* LEFT 7 COLS: Factual summary table & details */}
         <div className="lg:col-span-7 space-y-6">
           <Card variant="elevated" className="p-5 sm:p-6">
-            <h3 className="text-sm font-semibold text-signal-fg mb-1">Summary of Observations</h3>
+            <h3 className="text-sm font-semibold text-signal-fg mb-1">Activity summary</h3>
             <p className="text-xs text-signal-fgMuted mb-4">
-              All metrics are direct counts and empirical ratios
+              A concise summary from your activity history
             </p>
 
             <div className="divide-y divide-signal-border/50 text-xs">
@@ -89,7 +89,7 @@ export function ProfilePage({
                 <span className="font-mono font-medium text-signal-fg">{username}</span>
               </div>
               <div className="py-2.5 flex justify-between items-center">
-                <span className="text-signal-fgMuted">Observed Date Span</span>
+                <span className="text-signal-fgMuted">Date range</span>
                 <span className="font-mono font-medium text-signal-fg">
                   {dateRange.startStr && dateRange.endStr
                     ? `${dateRange.startStr} to ${dateRange.endStr}`
@@ -119,7 +119,7 @@ export function ProfilePage({
                 </div>
               )}
               <div className="py-2.5 flex justify-between items-center">
-                <span className="text-signal-fgMuted">Active Day Streak Record</span>
+                <span className="text-signal-fgMuted">Longest active-day streak</span>
                 <span className="font-mono font-medium text-signal-fg">
                   {consistencyStats.longestActiveDayStreak} days (current: {consistencyStats.currentActiveDayStreak}d)
                 </span>
@@ -142,10 +142,10 @@ export function ProfilePage({
           <Card variant="elevated" className="p-5 sm:p-6">
             <h3 className="text-sm font-semibold text-signal-fg mb-1 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-signal-accent" />
-              Evidence-Based Integrity Guarantee
+              How Signal calculates this profile
             </h3>
             <p className="text-xs text-signal-fgMuted leading-relaxed mt-2">
-              Signal V2 profile cards contain zero synthetic personality scoring, career predictions, or arbitrary confidence multipliers. Every statistic is calculated from logged activity dates and observed timestamps where available.
+              Every statistic comes from your logged activity dates and recorded timestamps. Signal does not add personality scores, career predictions, or confidence ratings.
             </p>
           </Card>
         </div>

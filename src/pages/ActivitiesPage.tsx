@@ -258,9 +258,9 @@ export function ActivitiesPage({
           )}
         </Card>
       ) : (
-        <div className="bg-signal-bgElevated border border-signal-border rounded-xl divide-y divide-signal-border overflow-hidden">
+        <div className="bg-signal-bgElevated border border-signal-border rounded-[10px] divide-y divide-signal-border overflow-hidden">
           {filteredList.map(activity => {
-            const color = categoryColors[activity.category] || '#00D4AA';
+            const color = categoryColors[activity.category] || '#b8ff3d';
             const formattedDate = activity.timestamp
               ? formatDate(activity.timestamp)
               : activity.date;
@@ -271,6 +271,15 @@ export function ActivitiesPage({
               <div
                 key={activity.id}
                 onClick={() => setExpandedActivityId(isExpanded ? null : activity.id)}
+                onKeyDown={event => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setExpandedActivityId(isExpanded ? null : activity.id);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-expanded={isExpanded}
                 className="p-3.5 sm:p-4 hover:bg-signal-bg/50 transition-colors cursor-pointer"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -302,8 +311,8 @@ export function ActivitiesPage({
                           {activity.platform}
                         </span>
                       )}
-                      {activity.source && (
-                        <span className="px-2 py-0.5 rounded bg-signal-bgElevated text-signal-fgSubtle capitalize">
+                      {activity.source && activity.source !== 'demo' && (
+                        <span className="px-2 py-0.5 rounded bg-signal-bgElevated text-[11px] text-signal-fgSubtle capitalize">
                           {activity.source.replace('_', ' ')}
                         </span>
                       )}

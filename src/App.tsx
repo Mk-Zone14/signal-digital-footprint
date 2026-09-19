@@ -59,6 +59,11 @@ function App() {
   const restoredUserId = useRef<string | null>(null);
 
   useEffect(() => {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [appState, activeTab]);
+
+  useEffect(() => {
     if (auth.status === 'signed_in' && auth.session && restoredUserId.current !== auth.session.user.id) {
       restoredUserId.current = auth.session.user.id;
       setDataMode('account');
@@ -162,7 +167,7 @@ function App() {
 
   const content = (() => {
     if (appState === 'auth') {
-      return <AuthPage configured={isSupabaseConfigured} error={auth.error} magicLinkSentTo={auth.magicLinkSentTo} onSignIn={auth.signIn} onBack={() => setAppState('landing')} />;
+      return <AuthPage configured={isSupabaseConfigured} error={auth.error} magicLinkSentTo={auth.magicLinkSentTo} onSignIn={auth.signIn} onBack={() => setAppState(dataMode ? 'dashboard' : 'landing')} />;
     }
     if (appState === 'import') {
       return (

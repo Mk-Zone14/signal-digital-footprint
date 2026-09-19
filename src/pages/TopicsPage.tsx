@@ -203,7 +203,7 @@ export function TopicsPage({
                 </h2>
               </div>
               <p className="text-xs text-signal-fgMuted">
-                Topic Activity &amp; Measured Co-occurrence Record
+                Topic activity and shared history
               </p>
             </div>
 
@@ -242,7 +242,7 @@ export function TopicsPage({
                 Related Topics
               </h3>
               <p className="text-xs text-signal-fgMuted mb-4">
-                Measured co-occurrence on shared activities
+                Topics recorded on the same activities
               </p>
 
               {relatedTopics.length === 0 ? (
@@ -252,10 +252,11 @@ export function TopicsPage({
               ) : (
                 <div className="space-y-2">
                   {relatedTopics.map(rel => (
-                    <div
+                    <button
+                      type="button"
                       key={rel.topic}
                       onClick={() => onSelectTopic(rel.topic)}
-                      className="p-2.5 bg-signal-bg border border-signal-border rounded-lg flex items-center justify-between text-xs hover:border-signal-borderHover cursor-pointer transition-colors"
+                      className="w-full p-2.5 bg-signal-bg border border-signal-border rounded-lg flex items-center justify-between text-xs hover:border-signal-borderHover cursor-pointer transition-colors text-left"
                     >
                       <span className="font-medium text-signal-fg truncate">
                         #{rel.topic}
@@ -263,7 +264,7 @@ export function TopicsPage({
                       <span className="text-[11px] font-mono text-signal-fgMuted bg-signal-bgElevated px-2 py-0.5 rounded border border-signal-border flex-shrink-0">
                         {rel.sharedCount} shared
                       </span>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
@@ -415,10 +416,11 @@ export function TopicsPage({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
           {displayTopics.map(topic => {
             return (
-              <div
+              <button
+                type="button"
                 key={topic.name}
                 onClick={() => onSelectTopic(topic.name)}
-                className="p-4 bg-signal-bgElevated border border-signal-border hover:border-signal-accent/50 rounded-xl transition-all cursor-pointer group space-y-3"
+                className="w-full p-4 bg-signal-bgElevated border border-signal-border hover:border-signal-accent/50 rounded-[10px] transition-colors cursor-pointer group space-y-3 text-left"
               >
                 <div className="flex items-start justify-between gap-2">
                   <h4 className="text-sm font-semibold text-signal-fg group-hover:text-signal-accent transition-colors truncate">
@@ -453,7 +455,7 @@ export function TopicsPage({
                       : `${topic.daysSinceLastActivity}d ago`}
                   </span>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>

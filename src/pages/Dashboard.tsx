@@ -30,7 +30,7 @@ const tabConfigs: Record<NavItem, { title: string; description: string }> = {
   },
   activities: {
     title: 'Activities',
-    description: 'What exactly did I do? Ground-truth activity history',
+    description: 'What exactly did I do? A complete activity history',
   },
   patterns: {
     title: 'Patterns',
@@ -309,14 +309,14 @@ export function Dashboard({
       displayName={displayName}
       mode={mode}
     >
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-[1440px] mx-auto space-y-7">
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-signal-border/40">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-5 border-b border-signal-border">
           <div>
-            <h1 className="font-display text-2xl font-bold text-signal-fg tracking-tight">
+            <h1 className="font-display text-3xl sm:text-4xl font-semibold text-signal-fg tracking-[-0.045em]">
               {currentTabConfig.title}
             </h1>
-            <p className="text-xs text-signal-fgMuted mt-0.5">
+            <p className="text-sm text-signal-fgMuted mt-1.5">
               {currentTabConfig.description}
             </p>
           </div>

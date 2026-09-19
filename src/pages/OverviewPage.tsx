@@ -111,7 +111,7 @@ export function OverviewPage({
               <div>
                 <h3 className="text-sm font-semibold text-signal-fg">Activity Distribution</h3>
                 <p className="text-xs text-signal-fgMuted mt-0.5">
-                  Direct count and proportion across recorded categories
+                  Recorded activity by category
                 </p>
               </div>
             </div>
@@ -163,7 +163,7 @@ export function OverviewPage({
               <div>
                 <h3 className="text-sm font-semibold text-signal-fg">Recent Activities</h3>
                 <p className="text-xs text-signal-fgMuted mt-0.5">
-                  Latest ground-truth activity log
+                  Latest recorded activity
                 </p>
               </div>
               {onNavigateTab && (

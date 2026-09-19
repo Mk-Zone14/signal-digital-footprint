@@ -1,11 +1,19 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { AlertCircle, CalendarDays, CheckCircle2, Database, Import, PenLine } from 'lucide-react';
+import { AlertCircle, CalendarDays, CheckCircle2, GitBranch, Import, PenLine, RadioTower } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import type { Category, Connection, ManualActivityInput } from '../types';
 import { deriveSourceCards } from '../platform/sourceCards';
 
 const categoryOptions: Category[] = ['coding', 'ai-ml', 'finance', 'filmmaking', 'reading', 'learning', 'social', 'projects'];
+const sourceDescriptions: Record<string, string> = {
+  github: 'Sync code activity and project history.',
+  google_calendar: 'Bring selected calendar activity into Signal.',
+  linear: 'Add issue and project activity when this connection becomes available.',
+  browser_extension: 'Save selected research and pages directly to your history.',
+  manual: 'Add an activity yourself with its date, topics, and source.',
+  import: 'Load an existing Signal JSON export into this view.',
+};
 
 interface SourcesPageProps {
   mode: 'demo' | 'account';
@@ -52,28 +60,32 @@ export function SourcesPage({ mode, connections, writeError, onCreateManual, onO
     }
   };
 
-  const icons = [Database, CalendarDays, CheckCircle2, Database, PenLine, Import];
+  const icons = [GitBranch, CalendarDays, CheckCircle2, RadioTower, PenLine, Import];
   return (
     <div className="space-y-6">
       <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {cards.map((card, index) => {
           const Icon = icons[index];
           return (
-            <section key={card.provider} className="card p-5" aria-label={card.label}>
+            <section key={card.provider} className="card p-5 min-h-52 flex flex-col" aria-label={card.label}>
               <div className="flex items-start gap-3">
-                <Icon className="w-5 h-5 text-signal-accent mt-0.5" aria-hidden="true" />
+                <Icon className="w-5 h-5 text-signal-fgMuted mt-0.5" aria-hidden="true" />
                 <div className="min-w-0 flex-1">
-                  <h2 className="font-medium text-signal-fg">{card.label}</h2>
-                  <p className="text-sm text-signal-fgMuted capitalize">{card.status}</p>
+                  <h2 className="font-display text-lg font-medium text-signal-fg">{card.label}</h2>
+                  <p className="mt-1 text-[10px] font-mono tracking-[0.12em] uppercase text-signal-accent">{card.status}</p>
                   {card.detail && <p className="text-xs text-signal-fgSubtle truncate">{card.detail}</p>}
                 </div>
               </div>
+              <p className="mt-5 text-sm leading-6 text-signal-fgMuted">{sourceDescriptions[card.provider]}</p>
+              <div className="mt-auto pt-5">
               {card.provider === 'manual' && (
-                <Button size="sm" variant="secondary" className="mt-4" onClick={mode === 'account' ? () => setShowForm(value => !value) : onRequestSignIn}>
+                <Button size="sm" variant="secondary" onClick={mode === 'account' ? () => setShowForm(value => !value) : onRequestSignIn}>
                   {mode === 'account' ? 'Add activity' : accountSessionAvailable ? 'Return to account' : 'Sign in to save'}
                 </Button>
               )}
-              {card.provider === 'import' && <Button size="sm" variant="secondary" className="mt-4" onClick={onOpenImport}>Open JSON import</Button>}
+              {card.provider === 'import' && <Button size="sm" variant="secondary" onClick={onOpenImport}>Open JSON import</Button>}
+              {!['manual', 'import'].includes(card.provider) && <Button size="sm" variant="ghost" disabled>{card.provider === 'browser_extension' ? 'Coming later' : 'Connection planned'}</Button>}
+              </div>
             </section>
           );
         })}

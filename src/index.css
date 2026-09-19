@@ -3,16 +3,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @theme {
-  --color-signal-bg: #0A0B0D;
-  --color-signal-bgElevated: #111317;
-  --color-signal-border: #1E2128;
-  --color-signal-borderHover: #2A2E38;
-  --color-signal-fg: #F0F1F4;
-  --color-signal-fgMuted: #8B8F9A;
-  --color-signal-fgSubtle: #5A5E6A;
-  --color-signal-accent: #00D4AA;
-  --color-signal-accentHover: #00EBBF;
-  --color-signal-accentMuted: #00D4AA1A;
+  --color-signal-bg: #050706;
+  --color-signal-bgElevated: #0c100e;
+  --color-signal-border: #202722;
+  --color-signal-borderHover: #354038;
+  --color-signal-fg: #f2f5f3;
+  --color-signal-fgMuted: #929c95;
+  --color-signal-fgSubtle: #626d66;
+  --color-signal-accent: #b8ff3d;
+  --color-signal-accentHover: #c8ff69;
+  --color-signal-accentMuted: #b8ff3d18;
   --color-signal-warning: #F5A623;
   --color-signal-danger: #FF4757;
 
@@ -53,9 +53,9 @@
     50% { opacity: 0.8; }
   }
 
-  --shadow-elevated: 0 4px 24px -4px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.03);
-  --shadow-elevated-hover: 0 8px 32px -8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
-  --shadow-glow-accent: 0 0 24px -4px rgba(0, 212, 170, 0.3);
+  --shadow-elevated: 0 18px 48px -34px rgba(0, 0, 0, 0.72);
+  --shadow-elevated-hover: 0 22px 56px -36px rgba(0, 0, 0, 0.78);
+  --shadow-glow-accent: 0 0 24px -8px rgba(184, 255, 61, 0.22);
 }
 
 @layer base {
@@ -78,6 +78,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    min-width: 320px;
   }
 
   ::selection {
@@ -122,7 +123,7 @@
   .card {
     background-color: var(--color-signal-bgElevated);
     border: 1px solid var(--color-signal-border);
-    border-radius: 0.75rem;
+    border-radius: 0.625rem;
     padding: 1.5rem;
     transition: all 0.2s;
   }
@@ -134,7 +135,7 @@
   .card-elevated {
     background-color: var(--color-signal-bgElevated);
     border: 1px solid var(--color-signal-border);
-    border-radius: 0.75rem;
+    border-radius: 0.625rem;
     box-shadow: var(--shadow-elevated);
     padding: 1.5rem;
   }

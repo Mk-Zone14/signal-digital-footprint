@@ -1,9 +1,9 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { FilterBar } from './FilterBar';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { Search, Menu, Settings, User, ChevronDown, LogOut } from 'lucide-react';
+import { Search, Menu, User, ChevronDown, LogOut } from 'lucide-react';
 import { NavItem, Category, DateRange } from '../types';
 import { useMediaQuery } from '../hooks';
 
@@ -52,10 +52,20 @@ export function DashboardLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useMediaQuery('(max-width: 1023px)');
 
+  useEffect(() => {
+    const closeMenus = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setMobileMenuOpen(false);
+      setShowProfileMenu(false);
+    };
+    document.addEventListener('keydown', closeMenus);
+    return () => document.removeEventListener('keydown', closeMenus);
+  }, []);
+
   const sidebarWidth = isMobile ? 0 : (sidebarCollapsed ? 64 : 256);
 
   return (
-    <div className="min-h-screen bg-signal-bg">
+    <div className="signal-product min-h-screen bg-signal-bg">
       {/* Desktop sidebar */}
       {!isMobile && (
         <Sidebar
@@ -76,7 +86,7 @@ export function DashboardLayout({
             onClick={() => setMobileMenuOpen(false)}
             aria-hidden="true"
           />
-          <div className="fixed inset-y-0 left-0 z-50 w-64">
+          <div className="fixed inset-y-0 left-0 z-50 w-64" role="dialog" aria-modal="true" aria-label="Navigation menu">
             <Sidebar
               activeTab={activeTab}
               onTabChange={(tab) => {
@@ -93,10 +103,10 @@ export function DashboardLayout({
       )}
 
       <div
-        className="transition-all duration-300 min-h-screen"
+        className="transition-[margin] duration-300 min-h-screen"
         style={{ marginLeft: `${sidebarWidth}px` }}
       >
-        <header className="sticky top-0 z-30 min-h-[4rem] py-2 bg-signal-bg/80 backdrop-blur-sm border-b border-signal-border flex items-center justify-between px-4 sm:px-6 gap-4">
+        <header className="sticky top-0 z-30 min-h-[4rem] py-2 bg-signal-bg/95 backdrop-blur-md border-b border-signal-border flex items-center justify-between px-4 sm:px-6 gap-4">
           <div className="flex items-center gap-3">
             {isMobile && (
               <Button
@@ -148,6 +158,7 @@ export function DashboardLayout({
                   onFilterChange.setSearchQuery('');
                 }}
                 hasActiveFilters={filters.categories.length > 0 || filters.searchQuery.length > 0}
+                compact
               />
             </div>
 
@@ -171,14 +182,6 @@ export function DashboardLayout({
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)} aria-hidden="true" />
                   <div className="absolute right-0 top-full mt-2 w-56 bg-signal-bgElevated border border-signal-border rounded-xl shadow-elevated py-2 z-50" role="menu">
-                    <button
-                      className="w-full px-4 py-2.5 text-left text-sm text-signal-fg hover:bg-signal-bg flex items-center gap-3 transition-colors"
-                      onClick={() => setShowProfileMenu(false)}
-                      role="menuitem"
-                    >
-                      <Settings className="w-4 h-4 text-signal-fgMuted" />
-                      Settings
-                    </button>
                     <button
                       className="w-full px-4 py-2.5 text-left text-sm text-signal-fg hover:bg-signal-bg flex items-center gap-3 transition-colors"
                       onClick={() => {
@@ -210,8 +213,8 @@ export function DashboardLayout({
         </header>
 
         {/* Mobile filter bar */}
-        {isMobile && (filters.categories.length > 0 || filters.searchQuery.length > 0) && (
-          <div className="px-4 py-2 border-b border-signal-border bg-signal-bg/50">
+        {isMobile && (
+          <div className="px-4 py-2 border-b border-signal-border bg-signal-bg/70">
             <FilterBar
               dateRange={filters.dateRange}
               onDateRangeChange={onFilterChange.updateDateRange}
@@ -227,7 +230,7 @@ export function DashboardLayout({
           </div>
         )}
 
-        <main className="p-4 sm:p-6 lg:p-8" role="main">
+        <main className="p-4 sm:p-7 lg:px-10 lg:py-9" role="main">
           {children}
         </main>
       </div>
